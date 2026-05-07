@@ -1055,6 +1055,12 @@
     async function submitOrder() {
       const items = Object.values(cart);
       if (items.length === 0) return alert('Adicione itens ao carrinho!');
+      
+      // Garante que o telefone existe (URL deve ter ?tel=+55...)
+      if (!telefone) {
+        alert('Link inválido. Peça um novo link pelo WhatsApp!');
+        return;
+      }
 
       if (tipoEntrega === 'entrega' && !document.getElementById('addressInput').value.trim()) {
         alert('Informe o endereço de entrega!');
@@ -1090,6 +1096,12 @@
         },
         itens: items.map(i => ({
           id: i.id,
+          nome: i.nome,
+          quantidade: i.qty,
+          preco: parseFloat(i.preco),
+          subtotal: parseFloat((i.preco * i.qty).toFixed(2))
+        })),
+        carrinho: items.map(i => ({  // campo duplicado para compatibilidade
           nome: i.nome,
           quantidade: i.qty,
           preco: parseFloat(i.preco),
