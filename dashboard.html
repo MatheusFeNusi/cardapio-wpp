@@ -842,7 +842,7 @@
       if (show) document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
       const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
       try {
-        const r = await fetch(`${SB_URL}/rest/v1/pedidos?created_at=gte.${hoje.toISOString()}&select=*,clientes(nome,nome_coletado,telefone,cpf),itens_pedido(nome_produto,quantidade,preco_unitario)&order=created_at.desc&limit=200`, { headers: SBH });
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?criado_em=gte.${hoje.toISOString()}&select=*,clientes(nome,nome_coletado,telefone,cpf),itens_pedido(nome_produto,quantidade,preco_unitario)&order=criado_em.desc&limit=200`, { headers: SBH });
         if (!r.ok) throw new Error(r.status);
         const data = await r.json();
         const newIds = new Set(data.map(p => p.id));
@@ -909,7 +909,7 @@
         const tel = p.clientes?.telefone || '';
         const itens = p.itens_pedido || [];
         const id8 = (p.id || '').slice(0, 8).toUpperCase();
-        const isNew = !['entregue', 'cancelado'].includes(p.status) && (Date.now() - new Date(p.created_at).getTime()) < 120000;
+        const isNew = !['entregue', 'cancelado'].includes(p.status) && (Date.now() - new Date(p.criado_em).getTime()) < 120000;
         const taxa = p.tipo_entrega === 'entrega' ? 5 : 0;
 
         const iHTML = itens.map(i => `
@@ -928,7 +928,7 @@
 
         return `<div class="card${isNew ? ' is-new' : ''}" id="c-${p.id}">
       <div class="card-top">
-        <div><div class="order-id">#${id8}</div><div class="order-hr">${T(p.created_at)}</div></div>
+        <div><div class="order-id">#${id8}</div><div class="order-hr">${T(p.criado_em)}</div></div>
         <span class="badge b-${p.status}">${SL[p.status] || p.status}</span>
       </div>
       <div class="card-body">
@@ -972,7 +972,7 @@
       const id8 = (p.id || '').slice(0, 8).toUpperCase();
       const itens = p.itens_pedido || [];
       const taxa = p.tipo_entrega === 'entrega' ? 5 : 0;
-      const data = new Date(p.created_at).toLocaleString('pt-BR');
+      const data = new Date(p.criado_em).toLocaleString('pt-BR');
 
       const iRows = itens.map(i => `<div class="pr-row"><span>${i.quantidade}x ${i.nome_produto}</span><span>${R(i.preco_unitario * i.quantidade)}</span></div>`).join('');
       const taxaRow = taxa ? `<div class="pr-row"><span>Taxa entrega</span><span>R$5,00</span></div>` : '';
