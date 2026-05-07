@@ -756,13 +756,26 @@
   </button>
 
   <script>
-    const SUPABASE_URL = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
-    // ⚠️ PREENCHA: Supabase > Settings > API > anon public key
-    const SUPABASE_ANON_KEY = 'COLE_SUA_ANON_KEY_AQUI';
-    const N8N_WEBHOOK = 'https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-pedido-site';
-    const PRODUTOS_BUCKET = 'produtos'; // bucket do Supabase Storage com as imagens
-    const WHATSAPP_NUMBER = '5511954803405';
-    const HAS_SUPABASE_CONFIG = SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('COLE_SUA_ANON_KEY_AQUI');
+    /* ════════════════════════════════════════════════════════════════
+       CONFIGURAÇÃO — Acarajé da Baiana (Cardápio)
+       ════════════════════════════════════════════════════════════════
+       Antes de fazer deploy no Vercel, preencha:
+       1. SUPABASE_ANON_KEY  — pegue em Supabase > Settings > API > "anon public"
+       2. PRODUTOS_BUCKET    — nome do bucket no Supabase Storage com as fotos
+       3. WHATSAPP_NUMBER    — número da loja para fallback (formato: 55DDDNNNNNNNNN)
+       4. N8N_WEBHOOK        — URL do webhook do n8n (já configurada)
+       ════════════════════════════════════════════════════════════════ */
+
+    const SUPABASE_URL      = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
+    const SUPABASE_ANON_KEY = 'COLE_SUA_ANON_KEY_AQUI';                  // ← PREENCHA
+    const N8N_WEBHOOK       = 'https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-pedido-site';
+    const PRODUTOS_BUCKET   = 'produtos';                                 // ← bucket no Supabase Storage
+    const WHATSAPP_NUMBER   = '5511954803405';                            // ← número da loja (fallback)
+
+    const HAS_SUPABASE_CONFIG =
+      SUPABASE_ANON_KEY &&
+      !SUPABASE_ANON_KEY.includes('COLE_SUA_ANON_KEY_AQUI') &&
+      SUPABASE_ANON_KEY.length > 50;
 
     const LOCAL_PRODUTOS = [
       {
@@ -839,6 +852,7 @@
       if (!HAS_SUPABASE_CONFIG) {
         produtos = LOCAL_PRODUTOS;
         renderProdutos();
+        showLocalBanner();
         return;
       }
 
@@ -851,7 +865,7 @@
         const data = await r.json();
         if (!Array.isArray(data) || data.length === 0) throw new Error('Nenhum produto encontrado');
 
-        // Resolver URLs das imagens usando o bucket 'produtos'
+        // Resolver URLs das imagens usando o bucket configurado
         produtos = data.map(p => {
           let img = p.imagem_url || '';
           if (img && !img.startsWith('http')) {
@@ -864,7 +878,22 @@
         console.warn('Usando cardápio local:', e);
         produtos = LOCAL_PRODUTOS;
         renderProdutos();
+        showLocalBanner();
       }
+    }
+
+    function showLocalBanner() {
+      // Mostra aviso discreto apenas em hostnames de dev/preview
+      const host = location.hostname;
+      const isDev = host === 'localhost' || host.endsWith('.vercel.app') === false || host.includes('git-');
+      if (!isDev && location.hostname !== 'localhost') return;
+      const existing = document.getElementById('localBanner');
+      if (existing) return;
+      const b = document.createElement('div');
+      b.id = 'localBanner';
+      b.style.cssText = 'background:#FFF8E1;border-bottom:1px solid #F0D080;padding:.6rem 1rem;font-size:.75rem;color:#7A5A10;text-align:center;font-weight:500';
+      b.textContent = '⚠️ Modo local — preencha SUPABASE_ANON_KEY no index.html para usar produtos do banco.';
+      document.body.insertBefore(b, document.body.firstChild);
     }
 
     function renderProdutos() {
@@ -1055,19 +1084,16 @@
     async function submitOrder() {
       const items = Object.values(cart);
       if (items.length === 0) return alert('Adicione itens ao carrinho!');
-      
-      // Garante que o telefone existe (URL deve ter ?tel=+55...)
-      if (!telefone) {
-        alert('Link inválido. Peça um novo link pelo WhatsApp!');
-        return;
-      }
 
       if (tipoEntrega === 'entrega' && !document.getElementById('addressInput').value.trim()) {
         alert('Informe o endereço de entrega!');
         return;
       }
 
-      if (formaPagamento === 'pix') {
+      // Se não veio telefone pela URL, manda direto pelo WhatsApp (fluxo manual)
+      const semTelefone = !telefone;
+
+      if (formaPagamento === 'pix' && !semTelefone) {
         const cpf = document.getElementById('cpfInput').value.replace(/\D/g, '');
         if (cpf.length !== 11) { alert('Informe um CPF válido com 11 dígitos!'); return; }
       }
@@ -1124,6 +1150,17 @@
       };
 
       try {
+        // Se não veio com ?tel= na URL, pula o webhook e vai direto pro WhatsApp da loja
+        if (semTelefone) {
+          openWhatsAppOrder(payload);
+          document.getElementById('drawerContent').style.display = 'none';
+          document.getElementById('successScreen').style.display = 'flex';
+          cart = {};
+          document.getElementById('cartCount').textContent = '0';
+          document.getElementById('floatBar').classList.remove('visible');
+          return;
+        }
+
         const response = await fetch(N8N_WEBHOOK, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -151,7 +151,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <span id="sIco">🔔</span>
       <span id="sLbl" style="font-size:.7rem">Som</span>
     </label>
-    <a class="btn-sm" href="https://project-5l88s.vercel.app" target="_blank">🛒 Cardápio</a>
+    <a class="btn-sm" href="/" target="_blank">🛒 Cardápio</a>
     <span class="countdown-txt">↻ <span id="cd">30</span>s</span>
     <button class="btn-sm btn-refresh" onclick="load(true)">Atualizar</button>
   </div>
@@ -204,9 +204,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </div>
 
 <script>
+/* ════════════════════════════════════════════════════════════════
+   CONFIGURAÇÃO — Painel Acarajé da Baiana
+   ════════════════════════════════════════════════════════════════
+   Antes de fazer deploy, preencha:
+   1. SB_KEY — Supabase > Settings > API > "anon public" (mesma do index.html)
+   ════════════════════════════════════════════════════════════════ */
+
 const SB_URL = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
-const SB_KEY = 'COLE_SUA_ANON_KEY_AQUI';
+const SB_KEY = 'COLE_SUA_ANON_KEY_AQUI';                  // ← PREENCHA (mesma do index.html)
 const SBH = { apikey:SB_KEY, Authorization:'Bearer '+SB_KEY, 'Content-Type':'application/json' };
+
+const HAS_CONFIG = SB_KEY && !SB_KEY.includes('COLE_SUA_ANON_KEY_AQUI') && SB_KEY.length > 50;
 
 let pedidos=[], filter='ativos', known=new Set(), cdTimer=null, cdVal=30;
 
@@ -233,6 +242,21 @@ function beep(){
 }
 
 async function load(show=false){
+  if(!HAS_CONFIG){
+    document.getElementById('grid').innerHTML = `
+      <div class="empty" style="max-width:480px;margin:2rem auto">
+        <div class="empty-ic">🔑</div>
+        <p style="font-size:1rem;color:var(--amber2);font-weight:600;margin-bottom:.5rem">Configuração pendente</p>
+        <p style="font-size:.85rem;color:var(--text2);line-height:1.5">
+          Edite <code style="background:var(--card);padding:.1rem .4rem;border-radius:4px;font-family:'DM Mono',monospace;color:var(--amber2)">dashboard.html</code> e preencha
+          <code style="background:var(--card);padding:.1rem .4rem;border-radius:4px;font-family:'DM Mono',monospace;color:var(--amber2)">SB_KEY</code>
+          com a anon key do Supabase.
+        </p>
+      </div>`;
+    clearInterval(cdTimer);
+    document.getElementById('cd').textContent='—';
+    return;
+  }
   if(show) document.getElementById('grid').innerHTML='<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
   const hoje=new Date(); hoje.setHours(0,0,0,0);
   try{
