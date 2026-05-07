@@ -1,249 +1,831 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel — Acarajé da Baiana</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0F0B06;--surface:#1A1208;--card:#211608;--border:#3A2810;--border2:#5A3E1A;
-  --amber:#C1520A;--amber2:#E8720E;--amber-pale:#2A1800;
-  --gold:#C89010;--green:#22763A;--green-pale:#0D2E18;
-  --blue:#1A5FA0;--blue-pale:#0A2040;--red:#A02020;--red-pale:#2A0A0A;
-  --text:#F0E8D8;--text2:#A09070;--text3:#60503A;--radius:10px;
-}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel — Acarajé da Baiana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
 
-/* HEADER */
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:.9rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.header-left{display:flex;align-items:center;gap:.8rem}
-.brand{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--amber2)}
-.brand small{color:var(--text2);font-weight:600;font-size:.8rem;display:block;margin-top:-1px}
-.live-dot{width:8px;height:8px;border-radius:50%;background:#22A050;animation:pulse 2s infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,160,80,.4)}70%{box-shadow:0 0 0 8px rgba(34,160,80,0)}100%{box-shadow:0 0 0 0}}
-.header-right{display:flex;align-items:center;gap:.8rem}
-.countdown-txt{font-size:.75rem;color:var(--text3);font-family:'DM Mono',monospace}
-.btn-sm{background:var(--card);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:.38rem .85rem;font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;transition:all .15s;text-decoration:none;display:inline-block}
-.btn-sm:hover{border-color:var(--amber);color:var(--amber2)}
-.btn-refresh{background:var(--amber-pale);border-color:#5A3000;color:var(--amber2)}
-.btn-refresh:hover{background:#3A2000}
-.sound-toggle{display:flex;align-items:center;gap:.3rem;font-size:.75rem;color:var(--text3);cursor:pointer;user-select:none}
-.sound-toggle:hover{color:var(--text2)}
+    :root {
+      --bg: #0F0B06;
+      --surface: #1A1208;
+      --card: #211608;
+      --border: #3A2810;
+      --border2: #5A3E1A;
+      --amber: #C1520A;
+      --amber2: #E8720E;
+      --amber-pale: #2A1800;
+      --gold: #C89010;
+      --green: #22763A;
+      --green-pale: #0D2E18;
+      --blue: #1A5FA0;
+      --blue-pale: #0A2040;
+      --red: #A02020;
+      --red-pale: #2A0A0A;
+      --text: #F0E8D8;
+      --text2: #A09070;
+      --text3: #60503A;
+      --radius: 10px;
+    }
 
-/* STATS */
-.stats{display:flex;gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
-.stat{flex:1;background:var(--surface);padding:.65rem 1rem;cursor:pointer;transition:background .15s;position:relative}
-.stat:hover,.stat.active{background:var(--card)}
-.stat.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--amber)}
-.stat-num{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;line-height:1}
-.stat-lbl{font-size:.65rem;color:var(--text3);margin-top:.15rem;text-transform:uppercase;letter-spacing:.06em}
-.s-aguardando .stat-num{color:var(--gold)}
-.s-pago .stat-num{color:#4A90D9}
-.s-preparo .stat-num{color:#E8B420}
-.s-pronto .stat-num{color:#3AB860}
-.s-entregue .stat-num{color:var(--text3)}
-.s-fat .stat-num{color:var(--amber2)}
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh
+    }
 
-/* TOOLBAR */
-.toolbar{padding:.7rem 1.5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--surface)}
-.pill{background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:999px;padding:.28rem .8rem;font-size:.75rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}
-.pill:hover{border-color:var(--amber);color:var(--amber2)}
-.pill.active{background:var(--amber);border-color:var(--amber);color:#fff}
-.search{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:.32rem .7rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.82rem;width:170px;outline:none;transition:border-color .15s;margin-left:auto}
-.search:focus{border-color:var(--amber)}
-.search::placeholder{color:var(--text3)}
+    /* HEADER */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: .9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100
+    }
 
-/* GRID */
-.grid{padding:1.2rem 1.5rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:.9rem;align-items:start}
-.empty{grid-column:1/-1;text-align:center;padding:4rem 1rem;color:var(--text3)}
-.empty-ic{font-size:2.5rem;margin-bottom:.7rem}
-.loading-wrap{grid-column:1/-1;text-align:center;padding:3rem;color:var(--text3)}
-.spinner{width:26px;height:26px;border:2px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto .8rem}
-@keyframes spin{to{transform:rotate(360deg)}}
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: .8rem
+    }
 
-/* CARD */
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s;animation:fi .2s ease}
-@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-.card:hover{border-color:var(--border2)}
-.card.is-new{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber)}
+    .brand {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--amber2)
+    }
 
-.card-top{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
-.order-id{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text3)}
-.order-hr{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--text3)}
+    .brand small {
+      color: var(--text2);
+      font-weight: 600;
+      font-size: .8rem;
+      display: block;
+      margin-top: -1px
+    }
 
-.badge{font-size:.64rem;font-weight:500;padding:.18rem .6rem;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
-.b-aguardando_pagamento{background:var(--amber-pale);color:var(--gold);border:1px solid #5A3A00}
-.b-pago{background:var(--blue-pale);color:#5AA0E0;border:1px solid #1A3A60}
-.b-em_preparo{background:#2A2000;color:#E8C020;border:1px solid #5A4A00}
-.b-pronto{background:var(--green-pale);color:#4ACA70;border:1px solid #1A4A28}
-.b-entregue{background:#181818;color:var(--text3);border:1px solid var(--border)}
-.b-cancelado{background:var(--red-pale);color:#E06060;border:1px solid #5A1A1A}
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22A050;
+      animation: pulse 2s infinite
+    }
 
-.card-body{padding:.9rem 1rem}
-.cli-name{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;color:var(--text)}
-.cli-tel{font-size:.75rem;color:var(--text2);font-family:'DM Mono',monospace;margin-top:.1rem}
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(34, 160, 80, .4)
+      }
 
-.info-row{display:flex;align-items:flex-start;gap:.4rem;font-size:.78rem;color:var(--text2);margin-top:.55rem}
-.info-row .ic{font-size:.88rem;flex-shrink:0;margin-top:.04rem}
+      70% {
+        box-shadow: 0 0 0 8px rgba(34, 160, 80, 0)
+      }
 
-.items-box{margin-top:.7rem;border-top:1px solid var(--border);padding-top:.7rem}
-.it-row{display:flex;justify-content:space-between;align-items:baseline;padding:.18rem 0;font-size:.8rem;border-bottom:1px solid #1A1008}
-.it-row:last-child{border-bottom:none}
-.it-name{color:var(--text);flex:1}
-.it-qty{color:var(--text3);font-family:'DM Mono',monospace;font-size:.7rem;margin:0 .4rem}
-.it-val{color:var(--text2);font-family:'DM Mono',monospace;font-size:.76rem;white-space:nowrap}
+      100% {
+        box-shadow: 0 0 0 0
+      }
+    }
 
-.tot-row{margin-top:.7rem;padding-top:.6rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:baseline}
-.tot-lbl{font-size:.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
-.tot-val{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:var(--amber2)}
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: .8rem
+    }
 
-/* ACTIONS */
-.card-actions{padding:.6rem 1rem;border-top:1px solid var(--border);display:flex;gap:.4rem;flex-wrap:wrap;background:var(--surface)}
-.act{flex:1;min-width:72px;padding:.38rem .5rem;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.73rem;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;text-align:center}
-.a-preparo{background:#2A2000;border-color:#5A4800;color:#E8C020}
-.a-preparo:hover{background:#3A3000}
-.a-pronto{background:var(--green-pale);border-color:#1A4A28;color:#4ACA70}
-.a-pronto:hover{background:#102818}
-.a-entregue{background:#181818;border-color:var(--border);color:var(--text2)}
-.a-entregue:hover{background:#222}
-.a-print{background:var(--amber-pale);border-color:#3A2000;color:var(--amber2)}
-.a-print:hover{background:#2A1400;border-color:var(--amber)}
-.a-cancel{background:var(--red-pale);border-color:#3A1010;color:#E06060;min-width:auto;flex:0;padding:.38rem .6rem}
-.a-cancel:hover{background:#200808}
-.act:disabled{opacity:.5;cursor:not-allowed}
+    .countdown-txt {
+      font-size: .75rem;
+      color: var(--text3);
+      font-family: 'DM Mono', monospace
+    }
 
-/* PRINT MODAL */
-.print-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center}
-.print-overlay.open{display:flex}
-.print-box{background:#fff;color:#000;padding:20px;width:300px;max-height:90vh;overflow-y:auto;border-radius:6px;font-family:'Courier New',monospace;font-size:12px;line-height:1.65}
-.print-box h3{font-size:13px;font-weight:bold;text-align:center}
-.print-box .sep{border:none;border-top:1px dashed #000;margin:.4rem 0}
-.pr-row{display:flex;justify-content:space-between}
-.pr-total{font-weight:bold;font-size:13px}
-.print-btns{display:flex;gap:.5rem;margin-top:1rem}
-.print-btns button{flex:1;padding:.5rem;border:1px solid #999;border-radius:4px;cursor:pointer;font-size:.8rem;font-family:sans-serif}
-.do-print{background:#111;color:#fff;border-color:#111}
-.cl-print{background:#fff}
+    .btn-sm {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      border-radius: 6px;
+      padding: .38rem .85rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: all .15s;
+      text-decoration: none;
+      display: inline-block
+    }
 
-/* TOAST */
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);border:1px solid var(--amber);border-radius:8px;padding:.65rem 1.1rem;font-size:.82rem;color:var(--text);z-index:999;animation:fi .25s ease;max-width:270px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+    .btn-sm:hover {
+      border-color: var(--amber);
+      color: var(--amber2)
+    }
 
-@media(max-width:600px){
-  .stats{flex-wrap:wrap}
-  .stat{min-width:50%}
-  .grid{grid-template-columns:1fr;padding:.8rem}
-}
-</style>
+    .btn-refresh {
+      background: var(--amber-pale);
+      border-color: #5A3000;
+      color: var(--amber2)
+    }
+
+    .btn-refresh:hover {
+      background: #3A2000
+    }
+
+    .sound-toggle {
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      font-size: .75rem;
+      color: var(--text3);
+      cursor: pointer;
+      user-select: none
+    }
+
+    .sound-toggle:hover {
+      color: var(--text2)
+    }
+
+    /* STATS */
+    .stats {
+      display: flex;
+      gap: 1px;
+      background: var(--border);
+      border-bottom: 1px solid var(--border)
+    }
+
+    .stat {
+      flex: 1;
+      background: var(--surface);
+      padding: .65rem 1rem;
+      cursor: pointer;
+      transition: background .15s;
+      position: relative
+    }
+
+    .stat:hover,
+    .stat.active {
+      background: var(--card)
+    }
+
+    .stat.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--amber)
+    }
+
+    .stat-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1
+    }
+
+    .stat-lbl {
+      font-size: .65rem;
+      color: var(--text3);
+      margin-top: .15rem;
+      text-transform: uppercase;
+      letter-spacing: .06em
+    }
+
+    .s-aguardando .stat-num {
+      color: var(--gold)
+    }
+
+    .s-pago .stat-num {
+      color: #4A90D9
+    }
+
+    .s-preparo .stat-num {
+      color: #E8B420
+    }
+
+    .s-pronto .stat-num {
+      color: #3AB860
+    }
+
+    .s-entregue .stat-num {
+      color: var(--text3)
+    }
+
+    .s-fat .stat-num {
+      color: var(--amber2)
+    }
+
+    /* TOOLBAR */
+    .toolbar {
+      padding: .7rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface)
+    }
+
+    .pill {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      border-radius: 999px;
+      padding: .28rem .8rem;
+      font-size: .75rem;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap
+    }
+
+    .pill:hover {
+      border-color: var(--amber);
+      color: var(--amber2)
+    }
+
+    .pill.active {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: #fff
+    }
+
+    .search {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .32rem .7rem;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .82rem;
+      width: 170px;
+      outline: none;
+      transition: border-color .15s;
+      margin-left: auto
+    }
+
+    .search:focus {
+      border-color: var(--amber)
+    }
+
+    .search::placeholder {
+      color: var(--text3)
+    }
+
+    /* GRID */
+    .grid {
+      padding: 1.2rem 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: .9rem;
+      align-items: start
+    }
+
+    .empty {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--text3)
+    }
+
+    .empty-ic {
+      font-size: 2.5rem;
+      margin-bottom: .7rem
+    }
+
+    .loading-wrap {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 3rem;
+      color: var(--text3)
+    }
+
+    .spinner {
+      width: 26px;
+      height: 26px;
+      border: 2px solid var(--border);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto .8rem
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    /* CARD */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .2s;
+      animation: fi .2s ease
+    }
+
+    @keyframes fi {
+      from {
+        opacity: 0;
+        transform: translateY(5px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .card:hover {
+      border-color: var(--border2)
+    }
+
+    .card.is-new {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 1px var(--amber)
+    }
+
+    .card-top {
+      padding: .75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .order-id {
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      color: var(--text3)
+    }
+
+    .order-hr {
+      font-family: 'DM Mono', monospace;
+      font-size: .7rem;
+      color: var(--text3)
+    }
+
+    .badge {
+      font-size: .64rem;
+      font-weight: 500;
+      padding: .18rem .6rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      white-space: nowrap
+    }
+
+    .b-aguardando_pagamento {
+      background: var(--amber-pale);
+      color: var(--gold);
+      border: 1px solid #5A3A00
+    }
+
+    .b-pago {
+      background: var(--blue-pale);
+      color: #5AA0E0;
+      border: 1px solid #1A3A60
+    }
+
+    .b-em_preparo {
+      background: #2A2000;
+      color: #E8C020;
+      border: 1px solid #5A4A00
+    }
+
+    .b-pronto {
+      background: var(--green-pale);
+      color: #4ACA70;
+      border: 1px solid #1A4A28
+    }
+
+    .b-entregue {
+      background: #181818;
+      color: var(--text3);
+      border: 1px solid var(--border)
+    }
+
+    .b-cancelado {
+      background: var(--red-pale);
+      color: #E06060;
+      border: 1px solid #5A1A1A
+    }
+
+    .card-body {
+      padding: .9rem 1rem
+    }
+
+    .cli-name {
+      font-family: 'Syne', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      color: var(--text)
+    }
+
+    .cli-tel {
+      font-size: .75rem;
+      color: var(--text2);
+      font-family: 'DM Mono', monospace;
+      margin-top: .1rem
+    }
+
+    .info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: .4rem;
+      font-size: .78rem;
+      color: var(--text2);
+      margin-top: .55rem
+    }
+
+    .info-row .ic {
+      font-size: .88rem;
+      flex-shrink: 0;
+      margin-top: .04rem
+    }
+
+    .items-box {
+      margin-top: .7rem;
+      border-top: 1px solid var(--border);
+      padding-top: .7rem
+    }
+
+    .it-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: .18rem 0;
+      font-size: .8rem;
+      border-bottom: 1px solid #1A1008
+    }
+
+    .it-row:last-child {
+      border-bottom: none
+    }
+
+    .it-name {
+      color: var(--text);
+      flex: 1
+    }
+
+    .it-qty {
+      color: var(--text3);
+      font-family: 'DM Mono', monospace;
+      font-size: .7rem;
+      margin: 0 .4rem
+    }
+
+    .it-val {
+      color: var(--text2);
+      font-family: 'DM Mono', monospace;
+      font-size: .76rem;
+      white-space: nowrap
+    }
+
+    .tot-row {
+      margin-top: .7rem;
+      padding-top: .6rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline
+    }
+
+    .tot-lbl {
+      font-size: .72rem;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .05em
+    }
+
+    .tot-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--amber2)
+    }
+
+    /* ACTIONS */
+    .card-actions {
+      padding: .6rem 1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: .4rem;
+      flex-wrap: wrap;
+      background: var(--surface)
+    }
+
+    .act {
+      flex: 1;
+      min-width: 72px;
+      padding: .38rem .5rem;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .73rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all .15s;
+      text-align: center
+    }
+
+    .a-preparo {
+      background: #2A2000;
+      border-color: #5A4800;
+      color: #E8C020
+    }
+
+    .a-preparo:hover {
+      background: #3A3000
+    }
+
+    .a-pronto {
+      background: var(--green-pale);
+      border-color: #1A4A28;
+      color: #4ACA70
+    }
+
+    .a-pronto:hover {
+      background: #102818
+    }
+
+    .a-entregue {
+      background: #181818;
+      border-color: var(--border);
+      color: var(--text2)
+    }
+
+    .a-entregue:hover {
+      background: #222
+    }
+
+    .a-print {
+      background: var(--amber-pale);
+      border-color: #3A2000;
+      color: var(--amber2)
+    }
+
+    .a-print:hover {
+      background: #2A1400;
+      border-color: var(--amber)
+    }
+
+    .a-cancel {
+      background: var(--red-pale);
+      border-color: #3A1010;
+      color: #E06060;
+      min-width: auto;
+      flex: 0;
+      padding: .38rem .6rem
+    }
+
+    .a-cancel:hover {
+      background: #200808
+    }
+
+    .act:disabled {
+      opacity: .5;
+      cursor: not-allowed
+    }
+
+    /* PRINT MODAL */
+    .print-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .75);
+      z-index: 500;
+      align-items: center;
+      justify-content: center
+    }
+
+    .print-overlay.open {
+      display: flex
+    }
+
+    .print-box {
+      background: #fff;
+      color: #000;
+      padding: 20px;
+      width: 300px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.65
+    }
+
+    .print-box h3 {
+      font-size: 13px;
+      font-weight: bold;
+      text-align: center
+    }
+
+    .print-box .sep {
+      border: none;
+      border-top: 1px dashed #000;
+      margin: .4rem 0
+    }
+
+    .pr-row {
+      display: flex;
+      justify-content: space-between
+    }
+
+    .pr-total {
+      font-weight: bold;
+      font-size: 13px
+    }
+
+    .print-btns {
+      display: flex;
+      gap: .5rem;
+      margin-top: 1rem
+    }
+
+    .print-btns button {
+      flex: 1;
+      padding: .5rem;
+      border: 1px solid #999;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: .8rem;
+      font-family: sans-serif
+    }
+
+    .do-print {
+      background: #111;
+      color: #fff;
+      border-color: #111
+    }
+
+    .cl-print {
+      background: #fff
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--amber);
+      border-radius: 8px;
+      padding: .65rem 1.1rem;
+      font-size: .82rem;
+      color: var(--text);
+      z-index: 999;
+      animation: fi .25s ease;
+      max-width: 270px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, .5)
+    }
+
+    @media(max-width:600px) {
+      .stats {
+        flex-wrap: wrap
+      }
+
+      .stat {
+        min-width: 50%
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+        padding: .8rem
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<header class="header">
-  <div class="header-left">
-    <div class="live-dot"></div>
-    <div class="brand">Acarajé da Baiana <small>Painel do Operador</small></div>
-  </div>
-  <div class="header-right">
-    <label class="sound-toggle">
-      <input type="checkbox" id="soundOn" checked style="display:none">
-      <span id="sIco">🔔</span>
-      <span id="sLbl" style="font-size:.7rem">Som</span>
-    </label>
-    <a class="btn-sm" href="/" target="_blank">🛒 Cardápio</a>
-    <span class="countdown-txt">↻ <span id="cd">30</span>s</span>
-    <button class="btn-sm btn-refresh" onclick="load(true)">Atualizar</button>
-  </div>
-</header>
+  <header class="header">
+    <div class="header-left">
+      <div class="live-dot"></div>
+      <div class="brand">Acarajé da Baiana <small>Painel do Operador</small></div>
+    </div>
+    <div class="header-right">
+      <label class="sound-toggle">
+        <input type="checkbox" id="soundOn" checked style="display:none">
+        <span id="sIco">🔔</span>
+        <span id="sLbl" style="font-size:.7rem">Som</span>
+      </label>
+      <a class="btn-sm" href="/" target="_blank">🛒 Cardápio</a>
+      <span class="countdown-txt">↻ <span id="cd">30</span>s</span>
+      <button class="btn-sm btn-refresh" onclick="load(true)">Atualizar</button>
+    </div>
+  </header>
 
-<div class="stats">
-  <div class="stat s-aguardando" onclick="setF('aguardando_pagamento')">
-    <div class="stat-num" id="nAg">—</div><div class="stat-lbl">⏳ Aguardando</div>
-  </div>
-  <div class="stat s-pago" onclick="setF('pago')">
-    <div class="stat-num" id="nPg">—</div><div class="stat-lbl">💳 Pago</div>
-  </div>
-  <div class="stat s-preparo" onclick="setF('em_preparo')">
-    <div class="stat-num" id="nPr">—</div><div class="stat-lbl">🔥 Preparo</div>
-  </div>
-  <div class="stat s-pronto" onclick="setF('pronto')">
-    <div class="stat-num" id="nPt">—</div><div class="stat-lbl">✅ Prontos</div>
-  </div>
-  <div class="stat s-entregue" onclick="setF('entregue')">
-    <div class="stat-num" id="nEn">—</div><div class="stat-lbl">📦 Entregues</div>
-  </div>
-  <div class="stat s-fat" onclick="setF('todos')">
-    <div class="stat-num" id="nFat">—</div><div class="stat-lbl">💰 Faturado</div>
-  </div>
-</div>
-
-<div class="toolbar">
-  <button class="pill active" id="f-ativos" onclick="setF('ativos')">🔴 Ativos</button>
-  <button class="pill" id="f-todos" onclick="setF('todos')">Todos</button>
-  <button class="pill" id="f-aguardando_pagamento" onclick="setF('aguardando_pagamento')">⏳</button>
-  <button class="pill" id="f-pago" onclick="setF('pago')">💳 Pago</button>
-  <button class="pill" id="f-em_preparo" onclick="setF('em_preparo')">🔥 Preparo</button>
-  <button class="pill" id="f-pronto" onclick="setF('pronto')">✅ Pronto</button>
-  <button class="pill" id="f-entregue" onclick="setF('entregue')">📦</button>
-  <input class="search" type="text" placeholder="Buscar cliente…" id="srch" oninput="render()">
-</div>
-
-<div class="grid" id="grid">
-  <div class="loading-wrap"><div class="spinner"></div>Carregando pedidos...</div>
-</div>
-
-<div class="print-overlay" id="pOverlay">
-  <div>
-    <div class="print-box" id="pBox"></div>
-    <div class="print-btns">
-      <button class="do-print" onclick="doPrint()">🖨️ Imprimir</button>
-      <button class="cl-print" onclick="closePrint()">✕ Fechar</button>
+  <div class="stats">
+    <div class="stat s-aguardando" onclick="setF('aguardando_pagamento')">
+      <div class="stat-num" id="nAg">—</div>
+      <div class="stat-lbl">⏳ Aguardando</div>
+    </div>
+    <div class="stat s-pago" onclick="setF('pago')">
+      <div class="stat-num" id="nPg">—</div>
+      <div class="stat-lbl">💳 Pago</div>
+    </div>
+    <div class="stat s-preparo" onclick="setF('em_preparo')">
+      <div class="stat-num" id="nPr">—</div>
+      <div class="stat-lbl">🔥 Preparo</div>
+    </div>
+    <div class="stat s-pronto" onclick="setF('pronto')">
+      <div class="stat-num" id="nPt">—</div>
+      <div class="stat-lbl">✅ Prontos</div>
+    </div>
+    <div class="stat s-entregue" onclick="setF('entregue')">
+      <div class="stat-num" id="nEn">—</div>
+      <div class="stat-lbl">📦 Entregues</div>
+    </div>
+    <div class="stat s-fat" onclick="setF('todos')">
+      <div class="stat-num" id="nFat">—</div>
+      <div class="stat-lbl">💰 Faturado</div>
     </div>
   </div>
-</div>
 
-<script>
-/* ════════════════════════════════════════════════════════════════
-   CONFIGURAÇÃO — Painel Acarajé da Baiana
-   ════════════════════════════════════════════════════════════════
-   Antes de fazer deploy, preencha:
-   1. SB_KEY — Supabase > Settings > API > "anon public" (mesma do index.html)
-   ════════════════════════════════════════════════════════════════ */
+  <div class="toolbar">
+    <button class="pill active" id="f-ativos" onclick="setF('ativos')">🔴 Ativos</button>
+    <button class="pill" id="f-todos" onclick="setF('todos')">Todos</button>
+    <button class="pill" id="f-aguardando_pagamento" onclick="setF('aguardando_pagamento')">⏳</button>
+    <button class="pill" id="f-pago" onclick="setF('pago')">💳 Pago</button>
+    <button class="pill" id="f-em_preparo" onclick="setF('em_preparo')">🔥 Preparo</button>
+    <button class="pill" id="f-pronto" onclick="setF('pronto')">✅ Pronto</button>
+    <button class="pill" id="f-entregue" onclick="setF('entregue')">📦</button>
+    <input class="search" type="text" placeholder="Buscar cliente…" id="srch" oninput="render()">
+  </div>
 
-const SB_URL = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
-const SB_KEY = 'COLE_SUA_ANON_KEY_AQUI';                  // ← PREENCHA (mesma do index.html)
-const SBH = { apikey:SB_KEY, Authorization:'Bearer '+SB_KEY, 'Content-Type':'application/json' };
+  <div class="grid" id="grid">
+    <div class="loading-wrap">
+      <div class="spinner"></div>Carregando pedidos...
+    </div>
+  </div>
 
-const HAS_CONFIG = SB_KEY && !SB_KEY.includes('COLE_SUA_ANON_KEY_AQUI') && SB_KEY.length > 50;
+  <div class="print-overlay" id="pOverlay">
+    <div>
+      <div class="print-box" id="pBox"></div>
+      <div class="print-btns">
+        <button class="do-print" onclick="doPrint()">🖨️ Imprimir</button>
+        <button class="cl-print" onclick="closePrint()">✕ Fechar</button>
+      </div>
+    </div>
+  </div>
 
-let pedidos=[], filter='ativos', known=new Set(), cdTimer=null, cdVal=30;
+  <script>
+    /* ════════════════════════════════════════════════════════════════
+       CONFIGURAÇÃO — Painel Acarajé da Baiana
+       ════════════════════════════════════════════════════════════════
+       Antes de fazer deploy, preencha:
+       1. SB_KEY — Supabase > Settings > API > "anon public" (mesma do index.html)
+       ════════════════════════════════════════════════════════════════ */
 
-// Sound
-const sOn=document.getElementById('soundOn');
-sOn.addEventListener('change',()=>{
-  document.getElementById('sIco').textContent=sOn.checked?'🔔':'🔕';
-  document.getElementById('sLbl').textContent=sOn.checked?'Som':'Mudo';
-});
-function beep(){
-  if(!sOn.checked) return;
-  try{
-    const ac=new(window.AudioContext||window.webkitAudioContext)();
-    [[880,.0],[1100,.12],[880,.24]].forEach(([f,t])=>{
-      const o=ac.createOscillator(),g=ac.createGain();
-      o.connect(g);g.connect(ac.destination);
-      o.frequency.value=f;o.type='sine';
-      g.gain.setValueAtTime(0,ac.currentTime+t);
-      g.gain.linearRampToValueAtTime(.3,ac.currentTime+t+.02);
-      g.gain.linearRampToValueAtTime(0,ac.currentTime+t+.1);
-      o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.15);
+    const SB_URL = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbWJleG50cnhnenhna3ZocGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Njk2OTUsImV4cCI6MjA5MzE0NTY5NX0.Tq_WsZGMNRDw4Zme9YBuw2i6fJIy6WYz3xFvbdcOmno';                  // ← PREENCHA (mesma do index.html)
+    const SBH = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+
+    const HAS_CONFIG = SB_KEY && !SB_KEY.includes('COLE_SUA_ANON_KEY_AQUI') && SB_KEY.length > 50;
+
+    let pedidos = [], filter = 'ativos', known = new Set(), cdTimer = null, cdVal = 30;
+
+    // Sound
+    const sOn = document.getElementById('soundOn');
+    sOn.addEventListener('change', () => {
+      document.getElementById('sIco').textContent = sOn.checked ? '🔔' : '🔕';
+      document.getElementById('sLbl').textContent = sOn.checked ? 'Som' : 'Mudo';
     });
-  }catch(e){}
-}
+    function beep() {
+      if (!sOn.checked) return;
+      try {
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        [[880, .0], [1100, .12], [880, .24]].forEach(([f, t]) => {
+          const o = ac.createOscillator(), g = ac.createGain();
+          o.connect(g); g.connect(ac.destination);
+          o.frequency.value = f; o.type = 'sine';
+          g.gain.setValueAtTime(0, ac.currentTime + t);
+          g.gain.linearRampToValueAtTime(.3, ac.currentTime + t + .02);
+          g.gain.linearRampToValueAtTime(0, ac.currentTime + t + .1);
+          o.start(ac.currentTime + t); o.stop(ac.currentTime + t + .15);
+        });
+      } catch (e) { }
+    }
 
-async function load(show=false){
-  if(!HAS_CONFIG){
-    document.getElementById('grid').innerHTML = `
+    async function load(show = false) {
+      if (!HAS_CONFIG) {
+        document.getElementById('grid').innerHTML = `
       <div class="empty" style="max-width:480px;margin:2rem auto">
         <div class="empty-ic">🔑</div>
         <p style="font-size:1rem;color:var(--amber2);font-weight:600;margin-bottom:.5rem">Configuração pendente</p>
@@ -253,149 +835,149 @@ async function load(show=false){
           com a anon key do Supabase.
         </p>
       </div>`;
-    clearInterval(cdTimer);
-    document.getElementById('cd').textContent='—';
-    return;
-  }
-  if(show) document.getElementById('grid').innerHTML='<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
-  const hoje=new Date(); hoje.setHours(0,0,0,0);
-  try{
-    const r=await fetch(`${SB_URL}/rest/v1/pedidos?created_at=gte.${hoje.toISOString()}&select=*,clientes(nome,nome_coletado,telefone,cpf),itens_pedido(nome_produto,quantidade,preco_unitario)&order=created_at.desc&limit=200`,{headers:SBH});
-    if(!r.ok) throw new Error(r.status);
-    const data=await r.json();
-    const newIds=new Set(data.map(p=>p.id));
-    const isFirst=known.size===0;
-    if(!isFirst){
-      data.forEach(p=>{
-        if(!known.has(p.id)){
-          beep();
-          toast('🆕 Novo pedido — '+(p.clientes?.nome_coletado||p.clientes?.nome||'Cliente'));
+        clearInterval(cdTimer);
+        document.getElementById('cd').textContent = '—';
+        return;
+      }
+      if (show) document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?created_at=gte.${hoje.toISOString()}&select=*,clientes(nome,nome_coletado,telefone,cpf),itens_pedido(nome_produto,quantidade,preco_unitario)&order=created_at.desc&limit=200`, { headers: SBH });
+        if (!r.ok) throw new Error(r.status);
+        const data = await r.json();
+        const newIds = new Set(data.map(p => p.id));
+        const isFirst = known.size === 0;
+        if (!isFirst) {
+          data.forEach(p => {
+            if (!known.has(p.id)) {
+              beep();
+              toast('🆕 Novo pedido — ' + (p.clientes?.nome_coletado || p.clientes?.nome || 'Cliente'));
+            }
+          });
         }
-      });
+        known = newIds;
+        pedidos = data;
+        stats();
+        render();
+      } catch (e) {
+        if (show) document.getElementById('grid').innerHTML = `<div class="empty"><div class="empty-ic">⚠️</div><p>Erro: ${e.message}</p></div>`;
+      }
+      resetCd();
     }
-    known=newIds;
-    pedidos=data;
-    stats();
-    render();
-  }catch(e){
-    if(show) document.getElementById('grid').innerHTML=`<div class="empty"><div class="empty-ic">⚠️</div><p>Erro: ${e.message}</p></div>`;
-  }
-  resetCd();
-}
 
-function stats(){
-  const c=s=>pedidos.filter(p=>p.status===s).length;
-  document.getElementById('nAg').textContent=c('aguardando_pagamento');
-  document.getElementById('nPg').textContent=c('pago');
-  document.getElementById('nPr').textContent=c('em_preparo');
-  document.getElementById('nPt').textContent=c('pronto');
-  document.getElementById('nEn').textContent=c('entregue');
-  const fat=pedidos.filter(p=>['pago','em_preparo','pronto','entregue'].includes(p.status)).reduce((s,p)=>s+parseFloat(p.total||0),0);
-  document.getElementById('nFat').textContent='R$'+fat.toFixed(0);
-}
+    function stats() {
+      const c = s => pedidos.filter(p => p.status === s).length;
+      document.getElementById('nAg').textContent = c('aguardando_pagamento');
+      document.getElementById('nPg').textContent = c('pago');
+      document.getElementById('nPr').textContent = c('em_preparo');
+      document.getElementById('nPt').textContent = c('pronto');
+      document.getElementById('nEn').textContent = c('entregue');
+      const fat = pedidos.filter(p => ['pago', 'em_preparo', 'pronto', 'entregue'].includes(p.status)).reduce((s, p) => s + parseFloat(p.total || 0), 0);
+      document.getElementById('nFat').textContent = 'R$' + fat.toFixed(0);
+    }
 
-function setF(f){
-  filter=f;
-  document.querySelectorAll('.pill').forEach(e=>e.classList.remove('active'));
-  const el=document.getElementById('f-'+f);
-  if(el) el.classList.add('active');
-  render();
-}
+    function setF(f) {
+      filter = f;
+      document.querySelectorAll('.pill').forEach(e => e.classList.remove('active'));
+      const el = document.getElementById('f-' + f);
+      if (el) el.classList.add('active');
+      render();
+    }
 
-function getLista(){
-  let l=[...pedidos];
-  const q=document.getElementById('srch').value.toLowerCase().trim();
-  if(filter==='ativos') l=l.filter(p=>['pago','em_preparo','pronto'].includes(p.status));
-  else if(filter!=='todos') l=l.filter(p=>p.status===filter);
-  if(q) l=l.filter(p=>{
-    const n=(p.clientes?.nome_coletado||p.clientes?.nome||'').toLowerCase();
-    return n.includes(q)||(p.clientes?.telefone||'').includes(q);
-  });
-  return l;
-}
+    function getLista() {
+      let l = [...pedidos];
+      const q = document.getElementById('srch').value.toLowerCase().trim();
+      if (filter === 'ativos') l = l.filter(p => ['pago', 'em_preparo', 'pronto'].includes(p.status));
+      else if (filter !== 'todos') l = l.filter(p => p.status === filter);
+      if (q) l = l.filter(p => {
+        const n = (p.clientes?.nome_coletado || p.clientes?.nome || '').toLowerCase();
+        return n.includes(q) || (p.clientes?.telefone || '').includes(q);
+      });
+      return l;
+    }
 
-const SL={aguardando_pagamento:'⏳ Aguardando PIX',pago:'💳 Pago',em_preparo:'🔥 Em preparo',pronto:'✅ Pronto',entregue:'📦 Entregue',cancelado:'❌ Cancelado'};
-const R=v=>'R$'+parseFloat(v||0).toFixed(2).replace('.',',');
-const T=iso=>iso?new Date(iso).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—';
+    const SL = { aguardando_pagamento: '⏳ Aguardando PIX', pago: '💳 Pago', em_preparo: '🔥 Em preparo', pronto: '✅ Pronto', entregue: '📦 Entregue', cancelado: '❌ Cancelado' };
+    const R = v => 'R$' + parseFloat(v || 0).toFixed(2).replace('.', ',');
+    const T = iso => iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
 
-function render(){
-  const l=getLista();
-  const g=document.getElementById('grid');
-  if(!l.length){g.innerHTML='<div class="empty"><div class="empty-ic">🫓</div><p>Nenhum pedido aqui</p></div>';return;}
-  g.innerHTML=l.map(p=>{
-    const nome=p.clientes?.nome_coletado||p.clientes?.nome||'Cliente';
-    const tel=p.clientes?.telefone||'';
-    const itens=p.itens_pedido||[];
-    const id8=(p.id||'').slice(0,8).toUpperCase();
-    const isNew=!['entregue','cancelado'].includes(p.status)&&(Date.now()-new Date(p.created_at).getTime())<120000;
-    const taxa=p.tipo_entrega==='entrega'?5:0;
+    function render() {
+      const l = getLista();
+      const g = document.getElementById('grid');
+      if (!l.length) { g.innerHTML = '<div class="empty"><div class="empty-ic">🫓</div><p>Nenhum pedido aqui</p></div>'; return; }
+      g.innerHTML = l.map(p => {
+        const nome = p.clientes?.nome_coletado || p.clientes?.nome || 'Cliente';
+        const tel = p.clientes?.telefone || '';
+        const itens = p.itens_pedido || [];
+        const id8 = (p.id || '').slice(0, 8).toUpperCase();
+        const isNew = !['entregue', 'cancelado'].includes(p.status) && (Date.now() - new Date(p.created_at).getTime()) < 120000;
+        const taxa = p.tipo_entrega === 'entrega' ? 5 : 0;
 
-    const iHTML=itens.map(i=>`
+        const iHTML = itens.map(i => `
       <div class="it-row">
         <span class="it-name">${i.nome_produto}</span>
         <span class="it-qty">×${i.quantidade}</span>
-        <span class="it-val">${R(i.preco_unitario*i.quantidade)}</span>
-      </div>`).join('')+(taxa?`<div class="it-row"><span class="it-name" style="color:var(--text3)">Taxa entrega</span><span></span><span class="it-val">R$5,00</span></div>`:'');
+        <span class="it-val">${R(i.preco_unitario * i.quantidade)}</span>
+      </div>`).join('') + (taxa ? `<div class="it-row"><span class="it-name" style="color:var(--text3)">Taxa entrega</span><span></span><span class="it-val">R$5,00</span></div>` : '');
 
-    let acts='';
-    if(p.status==='pago') acts+=`<button class="act a-preparo" onclick="upd('${p.id}','em_preparo')">🔥 Iniciar</button>`;
-    else if(p.status==='em_preparo') acts+=`<button class="act a-pronto" onclick="upd('${p.id}','pronto')">✅ Pronto</button>`;
-    else if(p.status==='pronto') acts+=`<button class="act a-entregue" onclick="upd('${p.id}','entregue')">📦 Entregar</button>`;
-    if(!['entregue','cancelado'].includes(p.status)) acts+=`<button class="act a-cancel" onclick="upd('${p.id}','cancelado')" title="Cancelar">✕</button>`;
-    acts+=`<button class="act a-print" onclick="openPrint('${p.id}')">🖨️</button>`;
+        let acts = '';
+        if (p.status === 'pago') acts += `<button class="act a-preparo" onclick="upd('${p.id}','em_preparo')">🔥 Iniciar</button>`;
+        else if (p.status === 'em_preparo') acts += `<button class="act a-pronto" onclick="upd('${p.id}','pronto')">✅ Pronto</button>`;
+        else if (p.status === 'pronto') acts += `<button class="act a-entregue" onclick="upd('${p.id}','entregue')">📦 Entregar</button>`;
+        if (!['entregue', 'cancelado'].includes(p.status)) acts += `<button class="act a-cancel" onclick="upd('${p.id}','cancelado')" title="Cancelar">✕</button>`;
+        acts += `<button class="act a-print" onclick="openPrint('${p.id}')">🖨️</button>`;
 
-    return `<div class="card${isNew?' is-new':''}" id="c-${p.id}">
+        return `<div class="card${isNew ? ' is-new' : ''}" id="c-${p.id}">
       <div class="card-top">
         <div><div class="order-id">#${id8}</div><div class="order-hr">${T(p.created_at)}</div></div>
-        <span class="badge b-${p.status}">${SL[p.status]||p.status}</span>
+        <span class="badge b-${p.status}">${SL[p.status] || p.status}</span>
       </div>
       <div class="card-body">
         <div class="cli-name">${nome}</div>
         <div class="cli-tel">${tel}</div>
-        <div class="info-row"><span class="ic">${p.tipo_entrega==='entrega'?'🛵':'🏃'}</span>
-          <span>${p.tipo_entrega==='entrega'?'Entrega — '+(p.endereco_entrega||'sem endereço'):'Retirada no local'}</span>
+        <div class="info-row"><span class="ic">${p.tipo_entrega === 'entrega' ? '🛵' : '🏃'}</span>
+          <span>${p.tipo_entrega === 'entrega' ? 'Entrega — ' + (p.endereco_entrega || 'sem endereço') : 'Retirada no local'}</span>
         </div>
-        <div class="info-row"><span class="ic">${p.forma_pagamento==='pix'?'💳':'💵'}</span>
-          <span>${(p.forma_pagamento||'—').toUpperCase()}${p.asaas_payment_link?` · <a href="${p.asaas_payment_link}" target="_blank" style="color:var(--amber2);font-size:.7rem">Link PIX ↗</a>`:''}</span>
+        <div class="info-row"><span class="ic">${p.forma_pagamento === 'pix' ? '💳' : '💵'}</span>
+          <span>${(p.forma_pagamento || '—').toUpperCase()}${p.asaas_payment_link ? ` · <a href="${p.asaas_payment_link}" target="_blank" style="color:var(--amber2);font-size:.7rem">Link PIX ↗</a>` : ''}</span>
         </div>
-        <div class="items-box">${iHTML||'<span style="color:var(--text3);font-size:.78rem">Sem itens</span>'}</div>
+        <div class="items-box">${iHTML || '<span style="color:var(--text3);font-size:.78rem">Sem itens</span>'}</div>
         <div class="tot-row"><span class="tot-lbl">Total</span><span class="tot-val">${R(p.total)}</span></div>
       </div>
       <div class="card-actions">${acts}</div>
     </div>`;
-  }).join('');
-}
+      }).join('');
+    }
 
-async function upd(id, st){
-  const btns=document.querySelectorAll(`#c-${id} .act`);
-  btns.forEach(b=>{b.disabled=true});
-  try{
-    const r=await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`,{
-      method:'PATCH',headers:{...SBH,Prefer:'return=minimal'},
-      body:JSON.stringify({status:st})
-    });
-    if(!r.ok) throw new Error(r.status);
-    const p=pedidos.find(x=>x.id===id);
-    if(p) p.status=st;
-    stats();render();
-    toast('Status: '+SL[st]);
-  }catch(e){toast('Erro: '+e.message);btns.forEach(b=>{b.disabled=false});}
-}
+    async function upd(id, st) {
+      const btns = document.querySelectorAll(`#c-${id} .act`);
+      btns.forEach(b => { b.disabled = true });
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
+          method: 'PATCH', headers: { ...SBH, Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: st })
+        });
+        if (!r.ok) throw new Error(r.status);
+        const p = pedidos.find(x => x.id === id);
+        if (p) p.status = st;
+        stats(); render();
+        toast('Status: ' + SL[st]);
+      } catch (e) { toast('Erro: ' + e.message); btns.forEach(b => { b.disabled = false }); }
+    }
 
-function openPrint(id){
-  const p=pedidos.find(x=>x.id===id);
-  if(!p) return;
-  const nome=p.clientes?.nome_coletado||p.clientes?.nome||'Cliente';
-  const tel=p.clientes?.telefone||'';
-  const id8=(p.id||'').slice(0,8).toUpperCase();
-  const itens=p.itens_pedido||[];
-  const taxa=p.tipo_entrega==='entrega'?5:0;
-  const data=new Date(p.created_at).toLocaleString('pt-BR');
+    function openPrint(id) {
+      const p = pedidos.find(x => x.id === id);
+      if (!p) return;
+      const nome = p.clientes?.nome_coletado || p.clientes?.nome || 'Cliente';
+      const tel = p.clientes?.telefone || '';
+      const id8 = (p.id || '').slice(0, 8).toUpperCase();
+      const itens = p.itens_pedido || [];
+      const taxa = p.tipo_entrega === 'entrega' ? 5 : 0;
+      const data = new Date(p.created_at).toLocaleString('pt-BR');
 
-  const iRows=itens.map(i=>`<div class="pr-row"><span>${i.quantidade}x ${i.nome_produto}</span><span>${R(i.preco_unitario*i.quantidade)}</span></div>`).join('');
-  const taxaRow=taxa?`<div class="pr-row"><span>Taxa entrega</span><span>R$5,00</span></div>`:'';
+      const iRows = itens.map(i => `<div class="pr-row"><span>${i.quantidade}x ${i.nome_produto}</span><span>${R(i.preco_unitario * i.quantidade)}</span></div>`).join('');
+      const taxaRow = taxa ? `<div class="pr-row"><span>Taxa entrega</span><span>R$5,00</span></div>` : '';
 
-  document.getElementById('pBox').innerHTML=`
+      document.getElementById('pBox').innerHTML = `
     <h3>🫓 ACARAJÉ DA BAIANA</h3>
     <div style="text-align:center;font-size:10px;color:#888">${data}</div>
     <hr class="sep">
@@ -403,54 +985,55 @@ function openPrint(id){
     <div>Cliente: ${nome}</div>
     <div>Tel: ${tel}</div>
     <hr class="sep">
-    <div><strong>${p.tipo_entrega==='entrega'?'🛵 ENTREGA':'🏃 RETIRADA'}</strong></div>
-    ${p.tipo_entrega==='entrega'&&p.endereco_entrega?`<div style="font-size:10px">${p.endereco_entrega}</div>`:''}
+    <div><strong>${p.tipo_entrega === 'entrega' ? '🛵 ENTREGA' : '🏃 RETIRADA'}</strong></div>
+    ${p.tipo_entrega === 'entrega' && p.endereco_entrega ? `<div style="font-size:10px">${p.endereco_entrega}</div>` : ''}
     <hr class="sep">
     <strong>ITENS</strong>
     ${iRows}${taxaRow}
     <hr class="sep">
     <div class="pr-row pr-total"><span>TOTAL</span><span>${R(p.total)}</span></div>
-    <div style="font-size:10px;color:#666">Pgto: ${(p.forma_pagamento||'—').toUpperCase()} · Status: ${SL[p.status]||p.status}</div>
+    <div style="font-size:10px;color:#666">Pgto: ${(p.forma_pagamento || '—').toUpperCase()} · Status: ${SL[p.status] || p.status}</div>
     <hr class="sep">
     <div style="text-align:center;font-size:10px;color:#aaa">Obrigada pela preferência! 💛</div>
   `;
-  document.getElementById('pOverlay').classList.add('open');
-}
-function doPrint(){
-  const c=document.getElementById('pBox').innerHTML;
-  const w=window.open('','_blank','width=380,height=620');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido</title>
+      document.getElementById('pOverlay').classList.add('open');
+    }
+    function doPrint() {
+      const c = document.getElementById('pBox').innerHTML;
+      const w = window.open('', '_blank', 'width=380,height=620');
+      w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido</title>
   <style>body{font-family:'Courier New',monospace;font-size:12px;padding:1cm;max-width:8cm;margin:0 auto}
   h3{font-size:13px;text-align:center}.sep{border:none;border-top:1px dashed #000;margin:.4rem 0}
   .pr-row{display:flex;justify-content:space-between}.pr-total{font-weight:bold;font-size:13px}
   </style></head><body>${c}<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),500)}<\/script></body></html>`);
-  w.document.close();
-}
-function closePrint(){document.getElementById('pOverlay').classList.remove('open')}
-document.getElementById('pOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('pOverlay'))closePrint()});
+      w.document.close();
+    }
+    function closePrint() { document.getElementById('pOverlay').classList.remove('open') }
+    document.getElementById('pOverlay').addEventListener('click', e => { if (e.target === document.getElementById('pOverlay')) closePrint() });
 
-// Countdown
-function resetCd(){
-  clearInterval(cdTimer);cdVal=30;
-  document.getElementById('cd').textContent=cdVal;
-  cdTimer=setInterval(()=>{
-    cdVal--;document.getElementById('cd').textContent=cdVal;
-    if(cdVal<=0){clearInterval(cdTimer);load();}
-  },1000);
-}
+    // Countdown
+    function resetCd() {
+      clearInterval(cdTimer); cdVal = 30;
+      document.getElementById('cd').textContent = cdVal;
+      cdTimer = setInterval(() => {
+        cdVal--; document.getElementById('cd').textContent = cdVal;
+        if (cdVal <= 0) { clearInterval(cdTimer); load(); }
+      }, 1000);
+    }
 
-// Toast
-let tTimer=null;
-function toast(msg){
-  clearTimeout(tTimer);
-  let t=document.querySelector('.toast');
-  if(t) t.remove();
-  t=document.createElement('div');t.className='toast';t.textContent=msg;
-  document.body.appendChild(t);
-  tTimer=setTimeout(()=>t.remove(),3000);
-}
+    // Toast
+    let tTimer = null;
+    function toast(msg) {
+      clearTimeout(tTimer);
+      let t = document.querySelector('.toast');
+      if (t) t.remove();
+      t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+      document.body.appendChild(t);
+      tTimer = setTimeout(() => t.remove(), 3000);
+    }
 
-load(true);
-</script>
+    load(true);
+  </script>
 </body>
+
 </html>
