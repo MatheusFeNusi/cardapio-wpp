@@ -621,6 +621,65 @@
 const SUPABASE_URL = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbWJleG50cnhnenhna3ZocGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Njk2OTUsImV4cCI6MjA5MzE0NTY5NX0.COLOQUE_SUA_ANON_KEY_AQUI';
 const N8N_WEBHOOK = 'https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-pedido-site';
+const WHATSAPP_NUMBER = '';
+const HAS_SUPABASE_CONFIG = SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('COLOQUE_SUA_ANON_KEY_AQUI');
+
+const LOCAL_PRODUTOS = [
+  {
+    id: 'acaraje-tradicional',
+    emoji: '🫓',
+    nome: 'Acarajé tradicional',
+    descricao: 'Acarajé com vatapá, caruru, salada e camarão.',
+    preco: 15,
+    imagem_url: '',
+    categoria: 'Acarajés'
+  },
+  {
+    id: 'acaraje-sem-camarao',
+    emoji: '🫓',
+    nome: 'Acarajé sem camarão',
+    descricao: 'Acarajé com vatapá, caruru e salada.',
+    preco: 12,
+    imagem_url: '',
+    categoria: 'Acarajés'
+  },
+  {
+    id: 'abare',
+    emoji: '🌽',
+    nome: 'Abará',
+    descricao: 'Massa de feijão fradinho cozida na folha de bananeira.',
+    preco: 14,
+    imagem_url: '',
+    categoria: 'Acarajés'
+  },
+  {
+    id: 'bolinho-estudante',
+    emoji: '🍘',
+    nome: 'Bolinho de estudante',
+    descricao: 'Porção doce com coco e tapioca.',
+    preco: 8,
+    imagem_url: '',
+    categoria: 'Porções'
+  },
+  {
+    id: 'refrigerante',
+    emoji: '🥤',
+    nome: 'Refrigerante lata',
+    descricao: '350 ml.',
+    preco: 6,
+    imagem_url: '',
+    categoria: 'Bebidas'
+  },
+  {
+    id: 'agua',
+    emoji: '💧',
+    nome: 'Água mineral',
+    descricao: '500 ml.',
+    preco: 4,
+    imagem_url: '',
+    categoria: 'Bebidas'
+  }
+];
 
 const params = new URLSearchParams(window.location.search);
 const telefone = params.get('tel') || params.get('telefone') || '';
@@ -637,14 +696,27 @@ if (nomeParam) {
 }
 
 async function loadProdutos() {
+  if (!HAS_SUPABASE_CONFIG) {
+    produtos = LOCAL_PRODUTOS;
+    renderProdutos();
+    return;
+  }
+
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/produtos?disponivel=eq.true&order=ordem.asc&select=id,emoji,nome,descricao,preco,imagem_url,categoria`, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY }
     });
-    produtos = await r.json();
+    if (!r.ok) throw new Error('Erro ao buscar produtos');
+
+    const data = await r.json();
+    if (!Array.isArray(data) || data.length === 0) throw new Error('Nenhum produto encontrado');
+
+    produtos = data;
     renderProdutos();
   } catch(e) {
-    document.getElementById('loadingState').innerHTML = '<p style="color:#C1520A">Erro ao carregar o cardápio. Tente novamente.</p>';
+    console.warn('Usando cardápio local:', e);
+    produtos = LOCAL_PRODUTOS;
+    renderProdutos();
   }
 }
 
@@ -808,6 +880,31 @@ function closeCart() {
   document.body.style.overflow = '';
 }
 
+function buildOrderMessage(payload) {
+  const linhas = [
+    'Olá! Quero fazer um pedido:',
+    '',
+    ...payload.itens.map(i => `- ${i.quantidade}x ${i.nome} - R$${i.subtotal.toFixed(2).replace('.', ',')}`),
+    '',
+    `Subtotal: R$${payload.subtotal.toFixed(2).replace('.', ',')}`,
+    `Entrega: ${payload.tipo_entrega === 'entrega' ? 'Entrega' : 'Retirada'}`,
+    payload.tipo_entrega === 'entrega' ? `Endereço: ${payload.endereco}` : '',
+    `Pagamento: ${payload.forma_pagamento.toUpperCase()}`,
+    payload.forma_pagamento === 'dinheiro' && payload.valor_troco ? `Troco para: R$${payload.valor_troco.toFixed(2).replace('.', ',')}` : '',
+    `Total: R$${payload.total.toFixed(2).replace('.', ',')}`
+  ].filter(Boolean);
+
+  return linhas.join('\n');
+}
+
+function openWhatsAppOrder(payload) {
+  const numero = WHATSAPP_NUMBER.replace(/\D/g, '') || telefone.replace(/\D/g, '');
+  if (!numero) throw new Error('Número do WhatsApp não configurado');
+
+  const url = `https://wa.me/${numero}?text=${encodeURIComponent(buildOrderMessage(payload))}`;
+  window.location.href = url;
+}
+
 async function submitOrder() {
   const items = Object.values(cart);
   if (items.length === 0) return alert('Adicione itens ao carrinho!');
@@ -849,20 +946,30 @@ async function submitOrder() {
   };
 
   try {
-    await fetch(N8N_WEBHOOK, {
+    const response = await fetch(N8N_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+    if (!response.ok) throw new Error('Webhook indisponível');
     document.getElementById('drawerContent').style.display = 'none';
     document.getElementById('successScreen').style.display = 'flex';
     cart = {};
     document.getElementById('cartCount').textContent = '0';
     document.getElementById('floatBar').classList.remove('visible');
   } catch(e) {
-    btn.disabled = false;
-    btn.textContent = '✅ Enviar pedido pelo WhatsApp';
-    alert('Erro ao enviar. Tente novamente.');
+    try {
+      openWhatsAppOrder(payload);
+      document.getElementById('drawerContent').style.display = 'none';
+      document.getElementById('successScreen').style.display = 'flex';
+      cart = {};
+      document.getElementById('cartCount').textContent = '0';
+      document.getElementById('floatBar').classList.remove('visible');
+    } catch(error) {
+      btn.disabled = false;
+      btn.textContent = '✅ Enviar pedido pelo WhatsApp';
+      alert('Não foi possível enviar agora. Configure o número do WhatsApp da loja no arquivo ou tente novamente.');
+    }
   }
 }
 
