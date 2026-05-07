@@ -1064,10 +1064,23 @@
       const taxa = tipoEntrega === 'entrega' ? 5 : 0;
       const subtotal = items.reduce((s, i) => s + i.preco * i.qty, 0);
 
+      const pedidoId = 'site-' + Date.now();
+      const totalPedido = parseFloat((subtotal + taxa).toFixed(2));
+
       const payload = {
+        origem: 'site-cardapio',
+        evento: 'pedido_criado',
+        pedido_id_externo: pedidoId,
+        criado_em: new Date().toISOString(),
         telefone,
         nome: nomeParam,
+        cliente: {
+          telefone,
+          nome: nomeParam,
+          cpf: document.getElementById('cpfInput').value.replace(/\D/g, '') || ''
+        },
         itens: items.map(i => ({
+          id: i.id,
           nome: i.nome,
           quantidade: i.qty,
           preco: parseFloat(i.preco),
@@ -1080,7 +1093,13 @@
         valor_troco: parseFloat(document.getElementById('trocoInput').value.replace(',', '.')) || 0,
         subtotal: parseFloat(subtotal.toFixed(2)),
         taxa_entrega: taxa,
-        total: parseFloat((subtotal + taxa).toFixed(2))
+        total: totalPedido,
+        totais: {
+          subtotal: parseFloat(subtotal.toFixed(2)),
+          taxa_entrega: taxa,
+          total: totalPedido
+        },
+        observacao: ''
       };
 
       try {
