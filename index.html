@@ -757,10 +757,12 @@
 
   <script>
     const SUPABASE_URL = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbWJleG50cnhnenhna3ZocGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Njk2OTUsImV4cCI6MjA5MzE0NTY5NX0.COLOQUE_SUA_ANON_KEY_AQUI';
+    // ⚠️ PREENCHA: Supabase > Settings > API > anon public key
+    const SUPABASE_ANON_KEY = 'COLE_SUA_ANON_KEY_AQUI';
     const N8N_WEBHOOK = 'https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-pedido-site';
+    const PRODUTOS_BUCKET = 'produtos'; // bucket do Supabase Storage com as imagens
     const WHATSAPP_NUMBER = '5511954803405';
-    const HAS_SUPABASE_CONFIG = SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('COLOQUE_SUA_ANON_KEY_AQUI');
+    const HAS_SUPABASE_CONFIG = SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('COLE_SUA_ANON_KEY_AQUI');
 
     const LOCAL_PRODUTOS = [
       {
@@ -849,7 +851,14 @@
         const data = await r.json();
         if (!Array.isArray(data) || data.length === 0) throw new Error('Nenhum produto encontrado');
 
-        produtos = data;
+        // Resolver URLs das imagens usando o bucket 'produtos'
+        produtos = data.map(p => {
+          let img = p.imagem_url || '';
+          if (img && !img.startsWith('http')) {
+            img = `${SUPABASE_URL}/storage/v1/object/public/${PRODUTOS_BUCKET}/${img.replace(/^\//, '')}`;
+          }
+          return { ...p, imagem_url: img };
+        });
         renderProdutos();
       } catch (e) {
         console.warn('Usando cardápio local:', e);
