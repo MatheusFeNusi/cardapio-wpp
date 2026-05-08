@@ -842,7 +842,7 @@
       if (show) document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
       const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
       try {
-        const r = await fetch(`${SB_URL}/rest/v1/pedidos?criado_em=gte.${hoje.toISOString()}&select=*,clientes(nome,nome_coletado,telefone,cpf),itens_pedido(nome_produto,quantidade,preco_unitario)&order=criado_em.desc&limit=200`, { headers: SBH });
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?created_at=gte.${hoje.toISOString()}&select=*&order=created_at.desc&limit=200`, { headers: SBH });
         if (!r.ok) throw new Error(r.status);
         const data = await r.json();
         const newIds = new Set(data.map(p => p.id));
@@ -851,7 +851,7 @@
           data.forEach(p => {
             if (!known.has(p.id)) {
               beep();
-              toast('🆕 Novo pedido — ' + (p.clientes?.nome_coletado || p.clientes?.nome || 'Cliente'));
+              toast('🆕 Novo pedido — ' + (p.nome_cliente || 'Cliente'));
             }
           });
         }
@@ -890,8 +890,8 @@
       if (filter === 'ativos') l = l.filter(p => ['pago', 'em_preparo', 'pronto'].includes(p.status));
       else if (filter !== 'todos') l = l.filter(p => p.status === filter);
       if (q) l = l.filter(p => {
-        const n = (p.clientes?.nome_coletado || p.clientes?.nome || '').toLowerCase();
-        return n.includes(q) || (p.clientes?.telefone || '').includes(q);
+        const n = (p.nome_cliente || '').toLowerCase();
+        return n.includes(q) || (p.telefone || '').includes(q);
       });
       return l;
     }
@@ -905,40 +905,49 @@
       const g = document.getElementById('grid');
       if (!l.length) { g.innerHTML = '<div class="empty"><div class="empty-ic">🫓</div><p>Nenhum pedido aqui</p></div>'; return; }
       g.innerHTML = l.map(p => {
-        const nome = p.clientes?.nome_coletado || p.clientes?.nome || 'Cliente';
-        const tel = p.clientes?.telefone || '';
-        const itens = p.itens_pedido || [];
-        const id8 = (p.id || '').slice(0, 8).toUpperCase();
-        const isNew = !['entregue', 'cancelado'].includes(p.status) && (Date.now() - new Date(p.criado_em).getTime()) < 120000;
+        const nome = p.nome_cliente || 'Cliente';
+        const tel = p.telefone || '';
+        const itens = Array.isArray(p.itens) ? p.itens : [];
+        const id8 = '#' + String(p.id).padStart(4, '0');
+        const isNew = !['entregue', 'cancelado'].includes(p.status) && (Date.now() - new Date(p.created_at).getTime()) < 120000;
         const taxa = p.tipo_entrega === 'entrega' ? 5 : 0;
 
-        const iHTML = itens.map(i => `
+        const iHTML = itens.map(i => {
+          const qtd = i.quantidade || i.qty || 1;
+          const preco = parseFloat(i.preco) || 0;
+          const sub = parseFloat(i.subtotal) || (preco * qtd);
+          return `
       <div class="it-row">
-        <span class="it-name">${i.nome_produto}</span>
-        <span class="it-qty">×${i.quantidade}</span>
-        <span class="it-val">${R(i.preco_unitario * i.quantidade)}</span>
-      </div>`).join('') + (taxa ? `<div class="it-row"><span class="it-name" style="color:var(--text3)">Taxa entrega</span><span></span><span class="it-val">R$5,00</span></div>` : '');
+        <span class="it-name">${i.nome || ''}</span>
+        <span class="it-qty">×${qtd}</span>
+        <span class="it-val">${R(sub)}</span>
+      </div>`;
+        }).join('') + (taxa ? `<div class="it-row"><span class="it-name" style="color:var(--text3)">Taxa entrega</span><span></span><span class="it-val">R$5,00</span></div>` : '');
 
         let acts = '';
         if (p.status === 'pago') acts += `<button class="act a-preparo" onclick="upd('${p.id}','em_preparo')">🔥 Iniciar</button>`;
+        else if (p.status === 'aguardando_pagamento' && p.forma_pagamento === 'dinheiro') acts += `<button class="act a-preparo" onclick="upd('${p.id}','em_preparo')">🔥 Iniciar</button>`;
         else if (p.status === 'em_preparo') acts += `<button class="act a-pronto" onclick="upd('${p.id}','pronto')">✅ Pronto</button>`;
         else if (p.status === 'pronto') acts += `<button class="act a-entregue" onclick="upd('${p.id}','entregue')">📦 Entregar</button>`;
         if (!['entregue', 'cancelado'].includes(p.status)) acts += `<button class="act a-cancel" onclick="upd('${p.id}','cancelado')" title="Cancelar">✕</button>`;
         acts += `<button class="act a-print" onclick="openPrint('${p.id}')">🖨️</button>`;
 
+        const trocoInfo = (p.precisa_troco && p.valor_troco > 0)
+          ? ` · Troco p/ ${R(p.valor_troco)}` : '';
+
         return `<div class="card${isNew ? ' is-new' : ''}" id="c-${p.id}">
       <div class="card-top">
-        <div><div class="order-id">#${id8}</div><div class="order-hr">${T(p.criado_em)}</div></div>
+        <div><div class="order-id">${id8}</div><div class="order-hr">${T(p.created_at)}</div></div>
         <span class="badge b-${p.status}">${SL[p.status] || p.status}</span>
       </div>
       <div class="card-body">
         <div class="cli-name">${nome}</div>
         <div class="cli-tel">${tel}</div>
         <div class="info-row"><span class="ic">${p.tipo_entrega === 'entrega' ? '🛵' : '🏃'}</span>
-          <span>${p.tipo_entrega === 'entrega' ? 'Entrega — ' + (p.endereco_entrega || 'sem endereço') : 'Retirada no local'}</span>
+          <span>${p.tipo_entrega === 'entrega' ? 'Entrega — ' + (p.endereco || 'sem endereço') : 'Retirada no local'}</span>
         </div>
         <div class="info-row"><span class="ic">${p.forma_pagamento === 'pix' ? '💳' : '💵'}</span>
-          <span>${(p.forma_pagamento || '—').toUpperCase()}${p.asaas_payment_link ? ` · <a href="${p.asaas_payment_link}" target="_blank" style="color:var(--amber2);font-size:.7rem">Link PIX ↗</a>` : ''}</span>
+          <span>${(p.forma_pagamento || '—').toUpperCase()}${trocoInfo}${p.asaas_payment_link ? ` · <a href="${p.asaas_payment_link}" target="_blank" style="color:var(--amber2);font-size:.7rem">Link PIX ↗</a>` : ''}</span>
         </div>
         <div class="items-box">${iHTML || '<span style="color:var(--text3);font-size:.78rem">Sem itens</span>'}</div>
         <div class="tot-row"><span class="tot-lbl">Total</span><span class="tot-val">${R(p.total)}</span></div>
@@ -967,31 +976,39 @@
     function openPrint(id) {
       const p = pedidos.find(x => x.id === id);
       if (!p) return;
-      const nome = p.clientes?.nome_coletado || p.clientes?.nome || 'Cliente';
-      const tel = p.clientes?.telefone || '';
-      const id8 = (p.id || '').slice(0, 8).toUpperCase();
-      const itens = p.itens_pedido || [];
+      const nome = p.nome_cliente || 'Cliente';
+      const tel = p.telefone || '';
+      const id8 = '#' + String(p.id).padStart(4, '0');
+      const itens = Array.isArray(p.itens) ? p.itens : [];
       const taxa = p.tipo_entrega === 'entrega' ? 5 : 0;
-      const data = new Date(p.criado_em).toLocaleString('pt-BR');
+      const data = new Date(p.created_at).toLocaleString('pt-BR');
 
-      const iRows = itens.map(i => `<div class="pr-row"><span>${i.quantidade}x ${i.nome_produto}</span><span>${R(i.preco_unitario * i.quantidade)}</span></div>`).join('');
+      const iRows = itens.map(i => {
+        const qtd = i.quantidade || i.qty || 1;
+        const preco = parseFloat(i.preco) || 0;
+        const sub = parseFloat(i.subtotal) || (preco * qtd);
+        return `<div class="pr-row"><span>${qtd}x ${i.nome || ''}</span><span>${R(sub)}</span></div>`;
+      }).join('');
       const taxaRow = taxa ? `<div class="pr-row"><span>Taxa entrega</span><span>R$5,00</span></div>` : '';
+      const trocoRow = (p.precisa_troco && p.valor_troco > 0)
+        ? `<div class="pr-row"><span>Troco para</span><span>${R(p.valor_troco)}</span></div>` : '';
 
       document.getElementById('pBox').innerHTML = `
     <h3>🫓 ACARAJÉ DA BAIANA</h3>
     <div style="text-align:center;font-size:10px;color:#888">${data}</div>
     <hr class="sep">
-    <div><strong>Pedido #${id8}</strong></div>
+    <div><strong>Pedido ${id8}</strong></div>
     <div>Cliente: ${nome}</div>
     <div>Tel: ${tel}</div>
     <hr class="sep">
     <div><strong>${p.tipo_entrega === 'entrega' ? '🛵 ENTREGA' : '🏃 RETIRADA'}</strong></div>
-    ${p.tipo_entrega === 'entrega' && p.endereco_entrega ? `<div style="font-size:10px">${p.endereco_entrega}</div>` : ''}
+    ${p.tipo_entrega === 'entrega' && p.endereco ? `<div style="font-size:10px">${p.endereco}</div>` : ''}
     <hr class="sep">
     <strong>ITENS</strong>
     ${iRows}${taxaRow}
     <hr class="sep">
     <div class="pr-row pr-total"><span>TOTAL</span><span>${R(p.total)}</span></div>
+    ${trocoRow}
     <div style="font-size:10px;color:#666">Pgto: ${(p.forma_pagamento || '—').toUpperCase()} · Status: ${SL[p.status] || p.status}</div>
     <hr class="sep">
     <div style="text-align:center;font-size:10px;color:#aaa">Obrigada pela preferência! 💛</div>
