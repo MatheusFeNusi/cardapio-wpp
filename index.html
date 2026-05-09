@@ -164,10 +164,24 @@
     }
 
     .products {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.4rem;
-      padding: 0 0.5rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      padding-bottom: 2.5rem;
+    }
+
+    .carousel-row {
+      display: flex;
+      overflow-x: auto;
+      gap: 0.8rem;
+      padding: 0.5rem 1rem;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .carousel-row::-webkit-scrollbar {
+      display: none;
     }
 
     .product-card {
@@ -181,6 +195,8 @@
       box-shadow: 0 4px 0 var(--border);
       border: 1px solid var(--border);
       overflow: hidden;
+      flex: 0 0 140px; /* Fixed width for carousel items */
+      scroll-snap-align: start;
     }
     .product-card.added-anim {
       transform: scale(0.95);
@@ -981,8 +997,12 @@
         const catLabel = document.createElement('div');
         catLabel.className = 'section-label';
         catLabel.textContent = cat;
-        catLabel.style.cssText = 'grid-column: 1/-1; background: var(--amber-pale); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);';
+        catLabel.style.cssText = 'background: var(--amber-pale); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: -1rem; padding: 0.8rem 1rem;';
         grid.appendChild(catLabel);
+
+        const carouselRow = document.createElement('div');
+        carouselRow.className = 'carousel-row';
+        grid.appendChild(carouselRow);
 
         catProdutos.forEach(p => {
           const card = document.createElement('div');
@@ -1005,7 +1025,7 @@
           <div class="product-price">R${parseFloat(p.preco).toFixed(2).replace('.', ',')}</div>
         </div>
       `;
-          grid.appendChild(card);
+          carouselRow.appendChild(card);
         });
       });
     }
