@@ -1263,12 +1263,37 @@
         observacao: ''
       };
 
-      openWhatsAppOrder(payload);
-      document.getElementById('drawerContent').style.display = 'none';
-      document.getElementById('successScreen').style.display = 'flex';
-      cart = {};
-      document.getElementById('cartCount').textContent = '0';
-      document.getElementById('floatBar').classList.remove('visible');
+      try {
+        const response = await fetch(N8N_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) throw new Error('Webhook indisponível');
+        
+        document.getElementById('drawerContent').style.display = 'none';
+        document.getElementById('successScreen').style.display = 'flex';
+        cart = {};
+        document.getElementById('cartCount').textContent = '0';
+        document.getElementById('floatBar').classList.remove('visible');
+        
+        // Redireciona para o WhatsApp com mensagem simplificada
+        setTimeout(() => {
+          const numero = WHATSAPP_NUMBER.replace(/\D/g, '') || (telefone ? telefone.replace(/\D/g, '') : '');
+          const msg = encodeURIComponent('Olá! Acabei de fazer um pedido pelo site.');
+          window.location.href = `https://wa.me/${numero}?text=${msg}`;
+        }, 800);
+        
+      } catch (e) {
+        // Fallback para WhatsApp direto em caso de erro no webhook
+        openWhatsAppOrder(payload);
+        document.getElementById('drawerContent').style.display = 'none';
+        document.getElementById('successScreen').style.display = 'flex';
+        cart = {};
+        document.getElementById('cartCount').textContent = '0';
+        document.getElementById('floatBar').classList.remove('visible');
+      }
     }
 
     loadProdutos();
