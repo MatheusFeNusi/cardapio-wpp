@@ -1034,7 +1034,21 @@
       });
     }
 
+    function isOpen() {
+      const now = new Date();
+      const hour = now.getHours();
+      const min = now.getMinutes();
+      const time = hour * 60 + min;
+      const start = 5 * 60 + 30; // 05:30
+      const end = 23 * 60;       // 23:00
+      return time >= start && time < end;
+    }
+
     function addToCart(id) {
+      if (!isOpen()) {
+        alert('Estamos fechados agora! Nosso horário é das 05:30 às 23:00.');
+        return;
+      }
       const p = produtos.find(x => x.id == id);
       if (!p) return;
 
@@ -1196,6 +1210,10 @@
     }
 
     async function submitOrder() {
+      if (!isOpen()) {
+        alert('Desculpe, a loja já fechou. Nosso horário é das 05:30 às 23:00.');
+        return;
+      }
       const items = Object.values(cart);
       if (items.length === 0) return alert('Adicione itens ao carrinho!');
 
@@ -1296,7 +1314,31 @@
       }
     }
 
+    function updateOpeningStatus() {
+      if (!isOpen()) {
+        const existing = document.getElementById('closedBanner');
+        if (existing) return;
+        const b = document.createElement('div');
+        b.id = 'closedBanner';
+        b.style.cssText = 'background:var(--red);color:white;padding:1rem;text-align:center;font-weight:900;position:sticky;top:0;z-index:9999;font-size:1.1rem;box-shadow:0 4px 10px rgba(0,0,0,0.2)';
+        b.innerHTML = '🛑 ESTAMOS FECHADOS NO MOMENTO<br><small style="font-weight:600;opacity:0.9;font-size:0.85rem">Horário: 05:30 às 23:00</small>';
+        document.body.insertBefore(b, document.body.firstChild);
+        
+        // Opcional: esconder botão de finalizar
+        const btn = document.getElementById('submitBtn');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Loja Fechada (05:30 - 23:00)';
+          btn.style.background = '#ccc';
+          btn.style.boxShadow = 'none';
+        }
+      }
+    }
+
     loadProdutos();
+    updateOpeningStatus();
+    // Checar a cada minuto
+    setInterval(updateOpeningStatus, 60000);
   </script>
 </body>
 
