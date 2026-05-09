@@ -935,19 +935,23 @@
     </div>
     <div class="stat s-preparo" onclick="setF('em_preparo')">
       <div class="stat-num" id="nPr">—</div>
-      <div class="stat-lbl">🔥 Em preparo</div>
+      <div class="stat-lbl">🔥 Preparo</div>
     </div>
     <div class="stat s-pronto" onclick="setF('pronto')">
       <div class="stat-num" id="nPt">—</div>
       <div class="stat-lbl">✅ Pronto</div>
     </div>
-    <div class="stat s-entregue" onclick="setF('entregue')">
-      <div class="stat-num" id="nEn">—</div>
-      <div class="stat-lbl">📦 Entregue</div>
+    <div class="stat s-fat" title="Hoje">
+      <div class="stat-num" id="nFatHoje" style="color:var(--green)">R$0</div>
+      <div class="stat-lbl">💰 Hoje</div>
     </div>
-    <div class="stat s-fat" onclick="setF('todos')">
-      <div class="stat-num" id="nFat">—</div>
-      <div class="stat-lbl">💰 Faturado</div>
+    <div class="stat s-fat" title="7 Dias">
+      <div class="stat-num" id="nFat7d" style="color:var(--amber-pale)">R$0</div>
+      <div class="stat-lbl">📅 7 Dias</div>
+    </div>
+    <div class="stat s-fat" title="Mês">
+      <div class="stat-num" id="nFatMes" style="color:var(--amber)">R$0</div>
+      <div class="stat-lbl">📊 Mês</div>
     </div>
   </div>
 
@@ -1067,9 +1071,20 @@
       document.getElementById('nPg').textContent = c('pago');
       document.getElementById('nPr').textContent = c('em_preparo');
       document.getElementById('nPt').textContent = c('pronto');
-      document.getElementById('nEn').textContent = c('entregue');
-      const fat = pedidos.filter(p => ['pago', 'em_preparo', 'pronto', 'entregue'].includes(p.status)).reduce((s, p) => s + parseFloat(p.total || 0), 0);
-      document.getElementById('nFat').textContent = 'R$' + fat.toFixed(0);
+      
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const last7d = today - (7 * 24 * 60 * 60 * 1000);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+      const calc = (since) => pedidos
+        .filter(p => ['pago', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue'].includes(p.status))
+        .filter(p => new Date(p.created_at).getTime() >= since)
+        .reduce((s, p) => s + parseFloat(p.total || 0), 0);
+
+      document.getElementById('nFatHoje').textContent = 'R$' + calc(today).toFixed(0);
+      document.getElementById('nFat7d').textContent = 'R$' + calc(last7d).toFixed(0);
+      document.getElementById('nFatMes').textContent = 'R$' + calc(startOfMonth).toFixed(0);
     }
 
     function setF(f) {
@@ -1135,6 +1150,7 @@
         else if (p.status === 'pronto' && p.tipo_entrega !== 'entrega') acts += `<button class="act a-entregue" onclick="upd('${p.id}','entregue')">📦 Entregar</button>`;
         else if (p.status === 'saiu_entrega') acts += `<button class="act a-entregue" onclick="upd('${p.id}','entregue')">📦 Entregue</button>`;
         if (!['entregue', 'cancelado'].includes(p.status)) acts += `<button class="act a-cancel" onclick="upd('${p.id}','cancelado')" title="Cancelar">✕</button>`;
+        if (p.status === 'entregue' || p.status === 'cancelado') acts += `<button class="act a-cancel" onclick="delOrder('${p.id}')" title="Excluir Permanentemente" style="background:#fee2e2;color:#b91c1c;border-color:#fecaca">🗑️</button>`;
         acts += `<button class="act a-print" onclick="openPrint('${p.id}')">🖨️</button>`;
 
         return `<div class="card${isNew ? ' is-new' : ''}" id="c-${p.id}">
@@ -1151,6 +1167,21 @@
     }
 
     /* ATUALIZAR STATUS */
+    async function delOrder(id) {
+      if (!confirm('Deseja excluir este pedido permanentemente? Esta ação não pode ser desfeita.')) return;
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
+          method: 'DELETE',
+          headers: SBH
+        });
+        if (!r.ok) throw new Error('Erro ao excluir');
+        toast('🗑️ Pedido excluído com sucesso');
+        load(true);
+      } catch (e) {
+        toast('❌ Erro: ' + e.message);
+      }
+    }
+
     async function upd(id, st) {
       const btns = document.querySelectorAll(`#c-${id} .act`);
       btns.forEach(b => b.disabled = true);
