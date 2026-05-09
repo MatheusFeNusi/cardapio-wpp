@@ -1128,7 +1128,7 @@
       const btns = document.querySelectorAll(`#c-${id} .act`);
       btns.forEach(b => b.disabled = true);
       try {
-        const r = await fetch(`${SB_URL}/rest/v1/v_pedidos_dashboard?id=eq.${id}`, {
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
           method: 'PATCH', headers: { ...SBH, Prefer: 'return=minimal' },
           body: JSON.stringify({ status: st, atualizado_em: new Date().toISOString() })
         });
