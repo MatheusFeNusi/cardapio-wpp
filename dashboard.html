@@ -1130,9 +1130,12 @@
       try {
         const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
           method: 'PATCH', headers: { ...SBH, Prefer: 'return=minimal' },
-          body: JSON.stringify({ status: st, atualizado_em: new Date().toISOString() })
+          body: JSON.stringify({ status: st })
         });
-        if (!r.ok) throw new Error(r.status);
+        if (!r.ok) {
+          const errText = await r.text();
+          throw new Error(`${r.status}: ${errText}`);
+        }
         const p = pedidos.find(x => x.id === id);
         if (p) p.status = st;
         stats(); render(); toast('Status: ' + (SL[st] || st));
