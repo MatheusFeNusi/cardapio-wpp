@@ -213,26 +213,48 @@
     async function doLogin() {
       const pwd = document.getElementById('auth-pwd').value.trim();
       if (!pwd) return;
+      const btn = document.querySelector('.auth-btn');
       const errEl = document.getElementById('auth-err');
+      
+      btn.disabled = true;
+      btn.textContent = 'Verificando...';
       errEl.textContent = '';
+
       try {
         const r = await fetch(`${SB_URL}/rest/v1/configuracoes?chave=eq.dashboard_senha&select=valor`, { headers: SBH });
+        if (!r.ok) throw new Error('API Error: ' + r.status);
+        
         const data = await r.json();
         const certa = data[0]?.valor || 'baiana@2025';
+        
         if (pwd === certa) {
-          sessionStorage.setItem('dash_auth','1');
+          localStorage.setItem('dash_auth', '1');
           document.getElementById('auth-screen').classList.add('hidden');
           loadProdutos();
         } else {
           errEl.textContent = 'Senha incorreta';
+          btn.disabled = false;
+          btn.textContent = 'Entrar';
           document.getElementById('auth-pwd').select();
         }
-      } catch(e) { errEl.textContent = 'Erro de conexão'; }
+      } catch (e) { 
+        errEl.textContent = 'Erro: ' + e.message; 
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+      }
     }
 
-    if (sessionStorage.getItem('dash_auth') === '1') {
+    if (localStorage.getItem('dash_auth') === '1') {
       document.getElementById('auth-screen').classList.add('hidden');
+      loadProdutos();
+    } else {
+      window.onload = () => {
+        const input = document.getElementById('auth-pwd');
+        if (input) input.focus();
+      }
     }
+
+    function doLogout() { localStorage.removeItem('dash_auth'); location.reload(); }
 
     /* CARREGAR PRODUTOS */
     async function loadProdutos() {
@@ -400,7 +422,7 @@
       tTimer = setTimeout(()=>t.remove(), 3000);
     }
 
-    if (sessionStorage.getItem('dash_auth') === '1') loadProdutos();
+    if (localStorage.getItem('dash_auth') === '1') loadProdutos();
   </script>
 </body>
 </html>
