@@ -187,16 +187,20 @@
     .product-card {
       background: var(--white);
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
       position: relative;
       display: flex;
       flex-direction: column;
       border-radius: var(--radius-sm);
       box-shadow: 0 4px 0 var(--border);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       overflow: hidden;
       flex: 0 0 140px; /* Fixed width for carousel items */
       scroll-snap-align: start;
+    }
+    .product-card.selected-card {
+      border-color: var(--amber);
+      box-shadow: 0 4px 0 var(--amber);
     }
     .product-card.added-anim {
       transform: scale(0.95);
@@ -1033,18 +1037,22 @@
     function addToCart(id) {
       const p = produtos.find(x => x.id == id);
       if (!p) return;
-      if (!cart[id]) cart[id] = { ...p, qty: 0 };
-      cart[id].qty++;
+
+      if (cart[id]) {
+        delete cart[id];
+      } else {
+        cart[id] = { ...p, qty: 1 };
+        const cardEl = document.getElementById('card-' + id);
+        if (cardEl) {
+          cardEl.classList.add('added-anim');
+          setTimeout(() => { cardEl.classList.remove('added-anim'); }, 200);
+        }
+      }
+
       updateCartUI();
 
-      const cardEl = document.getElementById('card-' + id);
-      if (cardEl) {
-        cardEl.classList.add('added-anim');
-        setTimeout(() => { cardEl.classList.remove('added-anim'); }, 200);
-      }
-      // Show toast manually or let cart UI show
       const f = document.getElementById('floatBar');
-      if(f) {
+      if(f && cart[id]) {
         f.style.transform = 'translateX(-50%) scale(1.1)';
         setTimeout(() => f.style.transform = 'translateX(-50%)', 200);
       }
@@ -1073,6 +1081,16 @@
       } else {
         floatBar.classList.remove('visible');
       }
+
+      // Sincroniza o estado visual (selecionado) dos cards
+      document.querySelectorAll('.product-card').forEach(card => {
+        const id = card.id.replace('card-', '');
+        if (cart[id]) {
+          card.classList.add('selected-card');
+        } else {
+          card.classList.remove('selected-card');
+        }
+      });
 
       renderCartItems(items, total, grand);
     }
