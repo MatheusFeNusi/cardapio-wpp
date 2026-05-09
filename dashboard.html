@@ -573,6 +573,12 @@
       border: 2px solid #fecaca
     }
 
+    .b-saiu_entrega {
+      background: #fff3e0;
+      color: #e65100;
+      border: 2px solid #ffcc80
+    }
+
     .card-body {
       padding: 1.2rem 1rem
     }
@@ -730,6 +736,16 @@
 
     .a-entregue:hover {
       background: #1a6bc2
+    }
+
+    .a-entrega {
+      background: var(--amber-pale);
+      color: #fff;
+      box-shadow: 0 3px 0 #d96d1e
+    }
+
+    .a-entrega:hover {
+      background: #ff984d
     }
 
     .a-cancel {
@@ -1065,7 +1081,7 @@
     function getLista() {
       let l = [...pedidos];
       const q = document.getElementById('srch').value.toLowerCase().trim();
-      if (filter === 'ativos') l = l.filter(p => ['aguardando_pagamento', 'pago', 'em_preparo', 'pronto'].includes(p.status));
+      if (filter === 'ativos') l = l.filter(p => ['aguardando_pagamento', 'pago', 'em_preparo', 'pronto', 'saiu_entrega'].includes(p.status));
       else if (filter !== 'todos') l = l.filter(p => p.status === filter);
       if (q) l = l.filter(p => {
         const n = (p.nome_cliente || p.nome_cliente_pedido || '').toLowerCase();
@@ -1074,7 +1090,15 @@
       return l;
     }
 
-    const SL = { aguardando_pagamento: '⏳ Aguardando PIX', pago: '💳 Pago', em_preparo: '🔥 Em preparo', pronto: '✅ Pronto', entregue: '📦 Entregue', cancelado: '❌ Cancelado' };
+    const SL = {
+      aguardando_pagamento: '⏳ Aguardando',
+      pago: '💳 Pago',
+      em_preparo: '🔥 Em preparo',
+      pronto: '✅ Pronto',
+      saiu_entrega: '🛵 Saiu p/ Entrega',
+      entregue: '📦 Entregue',
+      cancelado: '❌ Cancelado'
+    };
     const R = v => 'R$' + parseFloat(v || 0).toFixed(2).replace('.', ',');
     const T = iso => iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
 
@@ -1089,8 +1113,8 @@
         const itens = Array.isArray(p.itens) ? p.itens : [];
         const id8 = 'Ped-' + String(p.id).slice(0, 8).toUpperCase();
         const isNew = !['entregue', 'cancelado'].includes(p.status) && (Date.now() - new Date(p.created_at).getTime()) < 120000;
-        const taxa = p.tipo_entrega === 'entrega' ? 5 : 0;
-        const endStr = p.endereco || p.endereco_entrega || 'sem endereço';
+        const taxa = (p.tipo_entrega === 'entrega') ? (parseFloat(p.taxa_entrega) || 5) : 0;
+        const endStr = p.endereco_entrega || p.endereco || 'sem endereço';
 
         const iHTML = itens.map(i => {
           const qtd = i.quantidade || i.qty || 1;
@@ -1106,7 +1130,9 @@
         if (p.status === 'pago') acts += `<button class="act a-preparo" onclick="upd('${p.id}','em_preparo')">🔥 Iniciar</button>`;
         else if (p.status === 'aguardando_pagamento' && p.forma_pagamento !== 'pix') acts += `<button class="act a-preparo" onclick="upd('${p.id}','em_preparo')">🔥 Iniciar</button>`;
         else if (p.status === 'em_preparo') acts += `<button class="act a-pronto" onclick="upd('${p.id}','pronto')">✅ Pronto</button>`;
-        else if (p.status === 'pronto') acts += `<button class="act a-entregue" onclick="upd('${p.id}','entregue')">📦 Entregar</button>`;
+        else if (p.status === 'pronto' && p.tipo_entrega === 'entrega') acts += `<button class="act a-entrega" onclick="upd('${p.id}','saiu_entrega')">🛵 Saiu</button>`;
+        else if (p.status === 'pronto' && p.tipo_entrega !== 'entrega') acts += `<button class="act a-entregue" onclick="upd('${p.id}','entregue')">📦 Entregar</button>`;
+        else if (p.status === 'saiu_entrega') acts += `<button class="act a-entregue" onclick="upd('${p.id}','entregue')">📦 Entregue</button>`;
         if (!['entregue', 'cancelado'].includes(p.status)) acts += `<button class="act a-cancel" onclick="upd('${p.id}','cancelado')" title="Cancelar">✕</button>`;
         acts += `<button class="act a-print" onclick="openPrint('${p.id}')">🖨️</button>`;
 
