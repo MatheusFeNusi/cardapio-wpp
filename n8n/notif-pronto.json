@@ -1,0 +1,95 @@
+{
+  "name": "VPS2 - Acarajé - Notificação Pronto",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "acaraje-notif-pronto",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [240, 300],
+      "id": "notif-wh-001",
+      "name": "🔔 Webhook Notif Pronto"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.headers['x-secret'] }}",
+              "rightValue": "acaraje@2025#seguro",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [480, 300],
+      "id": "notif-filter-001",
+      "name": "Validar segredo"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('🔔 Webhook Notif Pronto').first().json.body;\nconst telefone = (body.telefone || '').replace(/\\D/g, '');\nconst nome = body.nome_cliente || 'cliente';\nconst id8 = body.pedido_id ? String(body.pedido_id).slice(0,8).toUpperCase() : '';\nconst tipoEntrega = body.tipo_entrega || 'retirada';\nconst endereco = body.endereco || '';\n\nlet msg = '';\nif (tipoEntrega === 'entrega') {\n  msg = `✅ *Seu pedido está pronto, ${nome}!* 🫓\\n\\n🛵 *Saiu para entrega!*\\n${endereco ? `📍 Endereço: ${endereco}` : ''}\\n\\nObrigada pela preferência! 💛`;\n} else {\n  msg = `✅ *Seu pedido está pronto, ${nome}!* 🫓\\n\\n🏃 *Pode vir retirar!*\\nEstamos te esperando 😊\\n\\nObrigada pela preferência! 💛`;\n}\n\nreturn [{ json: { telefone, mensagem: msg } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300],
+      "id": "notif-msg-001",
+      "name": "📝 Montar mensagem"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "1", "name": "WA_PHONE_ID", "value": "991514760701855", "type": "string" },
+            { "id": "2", "name": "WA_TOKEN", "value": "COLE_WA_TOKEN", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 300],
+      "id": "notif-cfg-001",
+      "name": "⚙️ Config WA"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v20.0/{{ $('⚙️ Config WA').first().json.WA_PHONE_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $('⚙️ Config WA').first().json.WA_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $('📝 Montar mensagem').first().json.telefone, type: 'text', text: { preview_url: false, body: $('📝 Montar mensagem').first().json.mensagem } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 300],
+      "id": "notif-wa-001",
+      "name": "📲 Enviar WhatsApp"
+    }
+  ],
+  "connections": {
+    "🔔 Webhook Notif Pronto": { "main": [[{ "node": "Validar segredo", "type": "main", "index": 0 }]] },
+    "Validar segredo": { "main": [[{ "node": "📝 Montar mensagem", "type": "main", "index": 0 }]] },
+    "📝 Montar mensagem": { "main": [[{ "node": "⚙️ Config WA", "type": "main", "index": 0 }]] },
+    "⚙️ Config WA": { "main": [[{ "node": "📲 Enviar WhatsApp", "type": "main", "index": 0 }]] }
+  },
+  "meta": { "templateCredsSetupCompleted": true }
+}

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produtos — Acarajé da Baiana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0F0B06;--surface:#1A1208;--card:#211608;--border:#3A2810;--border2:#5A3E1A;
+      --amber:#C1520A;--amber2:#E8720E;--amber-pale:#2A1800;--gold:#C89010;
+      --green:#22763A;--green-pale:#0D2E18;--red:#A02020;--red-pale:#2A0A0A;
+      --text:#F0E8D8;--text2:#A09070;--text3:#60503A;--radius:10px
+    }
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    @keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* AUTH */
+    #auth-screen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center}
+    #auth-screen.hidden{display:none}
+    .auth-box{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:340px;text-align:center}
+    .auth-logo{font-size:2.5rem;margin-bottom:.5rem}
+    .auth-title{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:var(--amber2);margin-bottom:.3rem}
+    .auth-sub{font-size:.8rem;color:var(--text3);margin-bottom:1.8rem}
+    .auth-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:1rem;outline:none;margin-bottom:.8rem;text-align:center;letter-spacing:.15em}
+    .auth-input:focus{border-color:var(--amber)}
+    .auth-btn{width:100%;background:var(--amber);border:none;border-radius:8px;padding:.75rem;color:#fff;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;cursor:pointer}
+    .auth-err{color:#E05050;font-size:.8rem;margin-top:.6rem;min-height:1.1rem}
+
+    /* HEADER */
+    .header{background:var(--surface);border-bottom:1px solid var(--border);padding:.9rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+    .brand{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--amber2)}
+    .brand small{color:var(--text2);font-weight:600;font-size:.8rem;display:block;margin-top:-1px}
+    .header-right{display:flex;gap:.6rem;align-items:center}
+    .btn{background:var(--card);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:.38rem .85rem;font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;transition:all .15s;text-decoration:none;display:inline-block}
+    .btn:hover{border-color:var(--amber);color:var(--amber2)}
+    .btn-primary{background:var(--amber);border-color:var(--amber);color:#fff}
+    .btn-primary:hover{background:var(--amber2);color:#fff}
+
+    /* CONTENT */
+    .page{max-width:960px;margin:0 auto;padding:1.5rem}
+    .sec-title{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
+
+    /* PRODUCT GRID */
+    .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.8rem;margin-bottom:2rem}
+    .prod-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;animation:fi .2s ease;transition:border-color .15s}
+    .prod-card:hover{border-color:var(--border2)}
+    .prod-card.disabled{opacity:.5}
+    .prod-img{width:100%;height:140px;object-fit:cover;background:var(--surface);display:block}
+    .prod-img-placeholder{width:100%;height:140px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+    .prod-body{padding:.8rem}
+    .prod-name{font-size:.95rem;font-weight:500;margin-bottom:.25rem}
+    .prod-desc{font-size:.72rem;color:var(--text2);margin-bottom:.5rem;line-height:1.4}
+    .prod-meta{display:flex;align-items:center;justify-content:space-between}
+    .prod-price{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--amber2)}
+    .prod-cat{font-size:.65rem;color:var(--text3);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:.1rem .5rem;text-transform:uppercase;letter-spacing:.06em}
+    .prod-actions{display:flex;gap:.4rem;padding:.6rem .8rem;border-top:1px solid var(--border);background:var(--surface)}
+    .act{flex:1;padding:.32rem .5rem;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:.72rem;cursor:pointer;transition:all .15s;white-space:nowrap}
+    .act:hover{border-color:var(--amber);color:var(--amber2)}
+    .act-on{background:var(--green-pale);border-color:#2A6040;color:#3AB860}
+    .act-on:hover{background:#143020}
+    .act-off{background:var(--red-pale);border-color:#5A1A1A;color:#E05050}
+    .act-off:hover{background:#3A0A0A}
+    .act-edit{background:var(--amber-pale);border-color:#5A3000;color:#E8B420}
+    .act-edit:hover{background:#3A2000}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;animation:fi .2s ease}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.5rem;border-bottom:1px solid var(--border)}
+    .modal-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--amber2)}
+    .modal-close{background:none;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;line-height:1;padding:.2rem}
+    .modal-close:hover{color:var(--text)}
+    .modal-body{padding:1.2rem 1.5rem}
+    .form-row{margin-bottom:1rem}
+    .form-row label{display:block;font-size:.75rem;color:var(--text3);margin-bottom:.35rem;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+    .form-row input,.form-row select,.form-row textarea{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.6rem .85rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .15s}
+    .form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--amber)}
+    .form-row textarea{resize:vertical;min-height:70px}
+    .form-row select option{background:var(--card);color:var(--text)}
+    .form-2col{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+    .modal-foot{display:flex;gap:.6rem;padding:1rem 1.5rem;border-top:1px solid var(--border)}
+    .modal-foot .btn{flex:1;text-align:center;padding:.55rem}
+    .img-preview{width:100%;height:120px;object-fit:cover;border-radius:6px;margin-top:.5rem;display:none}
+
+    /* SPINNER */
+    .spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:.6rem 1rem;font-size:.82rem;z-index:300;animation:fi .2s ease}
+
+    .loading-wrap{text-align:center;padding:3rem;color:var(--text3)}
+    .empty-state{text-align:center;padding:3rem;color:var(--text3);font-size:.9rem}
+
+    /* TOGGLE disponivel */
+    .toggle-wrap{display:flex;align-items:center;gap:.6rem}
+    .toggle{position:relative;width:38px;height:22px;cursor:pointer}
+    .toggle input{opacity:0;width:0;height:0;position:absolute}
+    .toggle-track{position:absolute;inset:0;background:var(--border2);border-radius:999px;transition:background .2s}
+    .toggle input:checked~.toggle-track{background:var(--green)}
+    .toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s}
+    .toggle input:checked~.toggle-thumb{transform:translateX(16px)}
+    .toggle-lbl{font-size:.82rem;color:var(--text2)}
+  </style>
+</head>
+<body>
+
+  <div id="auth-screen">
+    <div class="auth-box">
+      <div class="auth-logo">🫓</div>
+      <div class="auth-title">Acarajé da Baiana</div>
+      <div class="auth-sub">Gestão de produtos</div>
+      <input id="auth-pwd" class="auth-input" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="auth-btn" onclick="doLogin()">Entrar</button>
+      <div class="auth-err" id="auth-err"></div>
+    </div>
+  </div>
+
+  <div class="header">
+    <div class="brand">Acarajé da Baiana <small>Gestão de produtos</small></div>
+    <div class="header-right">
+      <a href="/dashboard" class="btn">← Painel</a>
+      <button class="btn btn-primary" onclick="openModal()">+ Novo produto</button>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="sec-title" id="sec-title">Carregando...</div>
+    <div class="prod-grid" id="prod-grid">
+      <div class="loading-wrap"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- MODAL EDIÇÃO / CRIAÇÃO -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <div class="modal-head">
+        <span class="modal-title" id="modal-title">Novo produto</span>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="f-id">
+        <div class="form-2col">
+          <div class="form-row">
+            <label>Emoji</label>
+            <input id="f-emoji" type="text" placeholder="🫓" maxlength="4">
+          </div>
+          <div class="form-row">
+            <label>Ordem</label>
+            <input id="f-ordem" type="number" min="0" placeholder="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Nome do produto *</label>
+          <input id="f-nome" type="text" placeholder="Acarajé Tradicional">
+        </div>
+        <div class="form-row">
+          <label>Descrição</label>
+          <textarea id="f-descricao" placeholder="Descrição do produto..."></textarea>
+        </div>
+        <div class="form-2col">
+          <div class="form-row">
+            <label>Preço (R$) *</label>
+            <input id="f-preco" type="number" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <div class="form-row">
+            <label>Categoria *</label>
+            <select id="f-categoria">
+              <option value="acaraje">Acarajé</option>
+              <option value="abara">Abará</option>
+              <option value="barca">Barca</option>
+              <option value="hotdog">Hot Dog</option>
+              <option value="bebida">Bebida</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>URL da imagem</label>
+          <input id="f-imagem" type="text" placeholder="https://... ou nome-do-arquivo.jpg">
+          <img id="img-preview" class="img-preview" alt="preview">
+        </div>
+        <div class="form-row toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" id="f-disponivel" checked>
+            <span class="toggle-track"></span>
+            <span class="toggle-thumb"></span>
+          </label>
+          <span class="toggle-lbl">Disponível no cardápio</span>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save" onclick="salvar()">Salvar produto</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SB_URL  = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
+    const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbWJleG50cnhnenhna3ZocGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Njk2OTUsImV4cCI6MjA5MzE0NTY5NX0.Tq_WsZGMNRDw4Zme9YBuw2i6fJIy6WYz3xFvbdcOmno';
+    const SBH     = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+    const SBHJ    = { ...SBH, 'Content-Type': 'application/json' };
+    const BUCKET  = 'https://ukmbexntrxgzxgkvhpfx.supabase.co/storage/v1/object/public/produtos/';
+
+    let produtos = [];
+
+    /* AUTH */
+    async function doLogin() {
+      const pwd = document.getElementById('auth-pwd').value.trim();
+      if (!pwd) return;
+      const errEl = document.getElementById('auth-err');
+      errEl.textContent = '';
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/configuracoes?chave=eq.dashboard_senha&select=valor`, { headers: SBH });
+        const data = await r.json();
+        const certa = data[0]?.valor || 'baiana@2025';
+        if (pwd === certa) {
+          sessionStorage.setItem('dash_auth','1');
+          document.getElementById('auth-screen').classList.add('hidden');
+          loadProdutos();
+        } else {
+          errEl.textContent = 'Senha incorreta';
+          document.getElementById('auth-pwd').select();
+        }
+      } catch(e) { errEl.textContent = 'Erro de conexão'; }
+    }
+
+    if (sessionStorage.getItem('dash_auth') === '1') {
+      document.getElementById('auth-screen').classList.add('hidden');
+    }
+
+    /* CARREGAR PRODUTOS */
+    async function loadProdutos() {
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/produtos?order=ordem.asc,nome.asc&select=*`, { headers: SBH });
+        if (!r.ok) throw new Error(r.status);
+        produtos = await r.json();
+        renderProdutos();
+      } catch(e) {
+        document.getElementById('prod-grid').innerHTML = `<div class="empty-state">Erro ao carregar: ${e.message}</div>`;
+      }
+    }
+
+    /* RESOLVER URL DA IMAGEM */
+    function resolveImg(url) {
+      if (!url) return null;
+      if (url.startsWith('http')) return url;
+      return BUCKET + encodeURIComponent(url);
+    }
+
+    /* RENDER */
+    function renderProdutos() {
+      const g = document.getElementById('prod-grid');
+      const ativos    = produtos.filter(p => p.disponivel).length;
+      const inativos  = produtos.filter(p => !p.disponivel).length;
+      document.getElementById('sec-title').textContent = `${produtos.length} produtos · ${ativos} ativos · ${inativos} ocultos`;
+
+      if (!produtos.length) {
+        g.innerHTML = '<div class="empty-state">Nenhum produto cadastrado. Clique em "+ Novo produto" para começar.</div>';
+        return;
+      }
+
+      g.innerHTML = produtos.map(p => {
+        const imgUrl = resolveImg(p.imagem_url);
+        const imgEl  = imgUrl
+          ? `<img class="prod-img" src="${imgUrl}" alt="${p.nome}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : '';
+        const ph = `<div class="prod-img-placeholder" style="${imgUrl?'display:none':''}">
+          ${p.emoji || '🫓'}</div>`;
+
+        return `<div class="prod-card${p.disponivel?'':' disabled'}" id="pc-${p.id}">
+  ${imgEl}${ph}
+  <div class="prod-body">
+    <div class="prod-name">${p.emoji||''} ${p.nome}</div>
+    ${p.descricao?`<div class="prod-desc">${p.descricao}</div>`:''}
+    <div class="prod-meta">
+      <div class="prod-price">R$${parseFloat(p.preco).toFixed(2).replace('.',',')}</div>
+      <span class="prod-cat">${p.categoria}</span>
+    </div>
+  </div>
+  <div class="prod-actions">
+    <button class="act act-edit" onclick="openModal('${p.id}')">✏️ Editar</button>
+    <button class="act ${p.disponivel?'act-off':'act-on'}" onclick="toggleDisp('${p.id}',${!p.disponivel})">
+      ${p.disponivel?'🙈 Ocultar':'👁️ Exibir'}
+    </button>
+  </div>
+</div>`;
+      }).join('');
+    }
+
+    /* TOGGLE DISPONÍVEL */
+    async function toggleDisp(id, novoValor) {
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/produtos?id=eq.${id}`, {
+          method: 'PATCH', headers: { ...SBHJ, Prefer: 'return=minimal' },
+          body: JSON.stringify({ disponivel: novoValor })
+        });
+        if (!r.ok) throw new Error(r.status);
+        const p = produtos.find(x => x.id===id);
+        if (p) p.disponivel = novoValor;
+        renderProdutos();
+        toast(novoValor ? '✅ Produto visível no cardápio' : '🙈 Produto ocultado do cardápio');
+      } catch(e) { toast('Erro: '+e.message); }
+    }
+
+    /* MODAL */
+    function openModal(id) {
+      const p = id ? produtos.find(x => x.id===id) : null;
+      document.getElementById('modal-title').textContent = p ? 'Editar produto' : 'Novo produto';
+      document.getElementById('f-id').value         = p?.id || '';
+      document.getElementById('f-emoji').value      = p?.emoji || '';
+      document.getElementById('f-nome').value       = p?.nome || '';
+      document.getElementById('f-descricao').value  = p?.descricao || '';
+      document.getElementById('f-preco').value      = p?.preco || '';
+      document.getElementById('f-categoria').value  = p?.categoria || 'acaraje';
+      document.getElementById('f-ordem').value      = p?.ordem ?? 0;
+      document.getElementById('f-imagem').value     = p?.imagem_url || '';
+      document.getElementById('f-disponivel').checked = p ? p.disponivel : true;
+
+      const prev = document.getElementById('img-preview');
+      const imgUrl = resolveImg(p?.imagem_url);
+      if (imgUrl) { prev.src = imgUrl; prev.style.display = 'block'; } else { prev.style.display = 'none'; }
+
+      document.getElementById('modal').classList.add('open');
+      document.getElementById('f-nome').focus();
+    }
+
+    document.getElementById('f-imagem').addEventListener('input', e => {
+      const url = resolveImg(e.target.value.trim());
+      const prev = document.getElementById('img-preview');
+      if (url) { prev.src = url; prev.style.display = 'block'; } else { prev.style.display = 'none'; }
+    });
+
+    function closeModal() { document.getElementById('modal').classList.remove('open'); }
+    document.getElementById('modal').addEventListener('click', e => { if (e.target===document.getElementById('modal')) closeModal(); });
+
+    /* SALVAR */
+    async function salvar() {
+      const id   = document.getElementById('f-id').value;
+      const nome = document.getElementById('f-nome').value.trim();
+      const preco = parseFloat(document.getElementById('f-preco').value);
+      if (!nome) { toast('Preencha o nome do produto'); return; }
+      if (!preco || preco <= 0) { toast('Preencha o preço'); return; }
+
+      const payload = {
+        nome,
+        descricao:    document.getElementById('f-descricao').value.trim() || null,
+        preco,
+        categoria:    document.getElementById('f-categoria').value,
+        emoji:        document.getElementById('f-emoji').value.trim() || null,
+        ordem:        parseInt(document.getElementById('f-ordem').value) || 0,
+        imagem_url:   document.getElementById('f-imagem').value.trim() || null,
+        disponivel:   document.getElementById('f-disponivel').checked
+      };
+
+      const btn = document.getElementById('btn-save');
+      btn.disabled = true; btn.textContent = 'Salvando...';
+
+      try {
+        let r;
+        if (id) {
+          r = await fetch(`${SB_URL}/rest/v1/produtos?id=eq.${id}`, {
+            method: 'PATCH', headers: { ...SBHJ, Prefer: 'return=representation' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          r = await fetch(`${SB_URL}/rest/v1/produtos`, {
+            method: 'POST', headers: { ...SBHJ, Prefer: 'return=representation' },
+            body: JSON.stringify(payload)
+          });
+        }
+        if (!r.ok) throw new Error(await r.text());
+        const [saved] = await r.json();
+        if (id) {
+          const idx = produtos.findIndex(x => x.id===id);
+          if (idx >= 0) produtos[idx] = saved;
+        } else {
+          produtos.push(saved);
+          produtos.sort((a,b) => a.ordem-b.ordem || a.nome.localeCompare(b.nome));
+        }
+        renderProdutos();
+        closeModal();
+        toast(id ? '✅ Produto atualizado!' : '✅ Produto criado!');
+      } catch(e) { toast('Erro ao salvar: '+e.message); }
+      finally { btn.disabled = false; btn.textContent = 'Salvar produto'; }
+    }
+
+    /* TOAST */
+    let tTimer = null;
+    function toast(msg) {
+      clearTimeout(tTimer);
+      let t = document.querySelector('.toast'); if(t) t.remove();
+      t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+      document.body.appendChild(t);
+      tTimer = setTimeout(()=>t.remove(), 3000);
+    }
+
+    if (sessionStorage.getItem('dash_auth') === '1') loadProdutos();
+  </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "acaraje-notif-status",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [240, 300],
+      "id": "n1",
+      "name": "📲 Webhook Notif Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.body['x-secret'] || $json.headers['x-secret'] || '' }}",
+              "rightValue": "acaraje@2025#seguro",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [460, 300],
+      "id": "n2",
+      "name": "🔐 Validar secret"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Monta a mensagem WhatsApp de acordo com o status do pedido\nconst body = $input.first().json.body || $input.first().json;\nconst nome = body.nome_cliente || 'Cliente';\nconst id8 = '#' + String(body.pedido_id || '').slice(-4).padStart(4, '0');\nconst tipo = body.tipo_entrega || 'retirada';\nconst total = parseFloat(body.total || 0).toFixed(2).replace('.', ',');\n\nlet mensagem = '';\nif (body.status === 'pronto') {\n  if (tipo === 'entrega') {\n    mensagem = `✅ ${nome}, seu pedido ${id8} está *pronto* e saindo para entrega agora! 🛵\\n\\nAguarde pouquinho, já chega! 😊`;\n  } else {\n    mensagem = `✅ ${nome}, seu pedido ${id8} está *pronto para retirada!* 🫓\\n\\nPode vir buscar quando quiser! 😊`;\n  }\n} else if (body.status === 'saiu_entrega') {\n  mensagem = `🛵 ${nome}, seu pedido ${id8} *saiu para entrega!*\\n\\nChegará em breve. Fique de olho! 😊`;\n} else if (body.status === 'cancelado') {\n  mensagem = `😔 ${nome}, infelizmente seu pedido ${id8} foi *cancelado*.\\n\\nEntre em contato conosco para mais informações. Pedimos desculpas pelo inconveniente.`;\n}\n\nif (!mensagem || !body.telefone) return [];\n\nreturn [{ json: { telefone: body.telefone, mensagem } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "id": "n3",
+      "name": "💬 Montar mensagem"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.mensagem }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [900, 300],
+      "id": "n4",
+      "name": "Tem mensagem?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v20.0/991514760701855/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer COLE_WA_TOKEN_AQUI" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.telefone.replace(/\\D/g, ''), type: 'text', text: { preview_url: false, body: $json.mensagem } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300],
+      "id": "n5",
+      "name": "📲 Enviar WhatsApp"
+    }
+  ],
+  "connections": {
+    "📲 Webhook Notif Status": { "main": [[{ "node": "🔐 Validar secret",  "type": "main", "index": 0 }]] },
+    "🔐 Validar secret":       { "main": [[{ "node": "💬 Montar mensagem", "type": "main", "index": 0 }]] },
+    "💬 Montar mensagem":      { "main": [[{ "node": "Tem mensagem?",       "type": "main", "index": 0 }]] },
+    "Tem mensagem?":           { "main": [[{ "node": "📲 Enviar WhatsApp",  "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "meta": { "templateCredsSetupCompleted": true }
+}
