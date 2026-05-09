@@ -66,31 +66,30 @@
       border: 2px solid var(--border);
       border-radius: 24px;
       padding: 2.5rem 2rem;
-      width: 100%;
+      width: 90%;
       max-width: 340px;
       text-align: center;
-      box-shadow: 0 12px 0 #f0d8b6
+      box-shadow: 0 12px 0 var(--border)
     }
 
     .auth-logo {
       font-size: 3rem;
-      margin-bottom: .5rem;
-      background: var(--amber-pale);
+      background: var(--orange);
       width: 80px;
       height: 80px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 1rem;
-      box-shadow: 0 4px 0 #d96d1e;
-      border: 3px solid var(--surface)
+      margin: 0 auto 1.5rem;
+      box-shadow: 0 4px 0 #D96D1E;
+      border: 3px solid #fff;
     }
 
     .auth-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.6rem;
-      font-weight: 900;
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
       color: var(--amber);
       margin-bottom: .3rem
     }
@@ -104,24 +103,25 @@
 
     .auth-input {
       width: 100%;
-      background: #FFF5E1;
+      background: #FDF9F3;
       border: 2px solid var(--border);
       border-radius: 12px;
       padding: 1.1rem;
-      color: var(--text);
+      color: var(--brown);
       font-family: 'DM Sans', sans-serif;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 700;
       outline: none;
-      margin-bottom: .8rem;
+      margin-bottom: 1rem;
       text-align: center;
-      letter-spacing: .15em;
-      transition: border-color .2s
+      transition: all .2s;
+      box-shadow: 0 3px 0 var(--border);
     }
 
     .auth-input:focus {
-      border-color: var(--amber-pale);
-      box-shadow: 0 0 0 3px rgba(255, 135, 50, 0.2)
+      border-color: var(--orange);
+      background: #fff;
+      box-shadow: 0 3px 0 var(--orange);
     }
 
     .auth-btn {
@@ -131,12 +131,11 @@
       border-radius: 12px;
       padding: 1.1rem;
       color: #fff;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: 800;
       cursor: pointer;
-      transition: transform .1s;
-      box-shadow: 0 4px 0 #b51c00
+      transition: all .1s;
+      box-shadow: 0 4px 0 var(--amber-dark);
     }
 
     .auth-btn:hover {
@@ -895,6 +894,12 @@
 
     if (sessionStorage.getItem('dash_auth') === '1') {
       document.getElementById('auth-screen').classList.add('hidden');
+      window.onload = () => load(true);
+    } else {
+      window.onload = () => {
+        const input = document.getElementById('auth-pwd');
+        if (input) input.focus();
+      }
     }
 
     /* SOM */
@@ -925,12 +930,17 @@
       if (show) document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
       const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
       try {
+        console.log('Iniciando carga de pedidos...');
         const r = await fetch(
           `${SB_URL}/rest/v1/pedidos?created_at=gte.${hoje.toISOString()}&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at,asaas_payment_id,asaas_payment_link&order=created_at.desc&limit=200`,
           { headers: SBH2 }
         );
-        if (!r.ok) throw new Error(r.status);
+        if (!r.ok) {
+          const txt = await r.text();
+          throw new Error(`Erro API (${r.status}): ${txt}`);
+        }
         const data = await r.json();
+        console.log('Pedidos carregados:', data.length);
         const isFirst = known.size === 0;
         if (!isFirst) {
           data.forEach(p => {
@@ -940,7 +950,8 @@
         known = new Set(data.map(p => p.id));
         pedidos = data; stats(); render();
       } catch (e) {
-        if (show) document.getElementById('grid').innerHTML = `<div class="empty"><div class="empty-ic">⚠️</div><p>Erro: ${e.message}</p></div>`;
+        console.error('Erro ao carregar:', e);
+        if (show) document.getElementById('grid').innerHTML = `<div class="empty"><div class="empty-ic">⚠️</div><p>Erro ao carregar dados: ${e.message}</p><button class="btn-sm" onclick="load(true)" style="margin-top:1rem;background:var(--amber)">Tentar novamente</button></div>`;
       }
       resetCd();
     }
