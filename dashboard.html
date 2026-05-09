@@ -911,15 +911,8 @@
 
     function doLogout() { localStorage.removeItem('dash_auth'); location.reload(); }
 
-    if (sessionStorage.getItem('dash_auth') === '1') {
-      document.getElementById('auth-screen').classList.add('hidden');
-      window.onload = () => load(true);
-    } else {
-      window.onload = () => {
-        const input = document.getElementById('auth-pwd');
-        if (input) input.focus();
-      }
-    }
+
+
 
     /* SOM */
     const sOn = document.getElementById('soundOn');
@@ -1085,11 +1078,6 @@
             </div>
             <div class="card-actions">${acts}</div>
           </div>`;
-      }).join('');
-    }n>'}</div>
-  <div class="tot-row"><span class="tot-lbl">Total</span><span class="tot-val">${R(p.total)}</span></div>
-</div>
-<div class="card-actions">${acts}</div></div>`;
       }).join('');
     }
 
