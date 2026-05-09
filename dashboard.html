@@ -780,8 +780,11 @@
       <div class="auth-logo">🫓</div>
       <div class="auth-title">Acarajé da Baiana</div>
       <div class="auth-sub">Painel do operador</div>
-      <input id="auth-pwd" class="auth-input" type="password" placeholder="••••••••" autocomplete="current-password"
-        onkeydown="if(event.key==='Enter')doLogin()">
+      <div style="position:relative;width:100%">
+        <input id="auth-pwd" class="auth-input" type="password" placeholder="Sua senha..." autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()">
+        <span onclick="togglePwd()" style="position:absolute;right:15px;top:20px;cursor:pointer;opacity:0.5">👁️</span>
+      </div>
       <button class="auth-btn" onclick="doLogin()">Entrar</button>
       <div class="auth-err" id="auth-err"></div>
     </div>
@@ -873,21 +876,36 @@
     async function doLogin() {
       const pwd = document.getElementById('auth-pwd').value.trim();
       if (!pwd) return;
+      const btn = document.querySelector('.auth-btn');
       const errEl = document.getElementById('auth-err');
+      
+      btn.disabled = true;
+      btn.textContent = 'Verificando...';
       errEl.textContent = '';
+
       try {
         const r = await fetch(`${SB_URL}/rest/v1/configuracoes?chave=eq.dashboard_senha&select=valor`, { headers: SBH2 });
+        if (!r.ok) throw new Error('Falha na API: ' + r.status);
+        
         const data = await r.json();
         const certa = data[0]?.valor || 'baiana@2025';
+        
         if (pwd === certa) {
           sessionStorage.setItem('dash_auth', '1');
           document.getElementById('auth-screen').classList.add('hidden');
           load(true);
         } else {
           errEl.textContent = 'Senha incorreta';
+          btn.disabled = false;
+          btn.textContent = 'Entrar';
           document.getElementById('auth-pwd').select();
         }
-      } catch (e) { errEl.textContent = 'Erro de conexão'; }
+      } catch (e) { 
+        errEl.textContent = 'Erro: ' + e.message; 
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+        console.error('Login Error:', e);
+      }
     }
 
     function doLogout() { sessionStorage.removeItem('dash_auth'); location.reload(); }
@@ -1130,6 +1148,22 @@
 
     /* COUNTDOWN */
     function resetCd() { clearInterval(cdTimer); cdVal = 30; document.getElementById('cd').textContent = cdVal; cdTimer = setInterval(() => { cdVal--; document.getElementById('cd').textContent = cdVal; if (cdVal <= 0) { clearInterval(cdTimer); load(); } }, 1000); }
+
+    /* AUTH UI */
+    function togglePwd() {
+      const i = document.getElementById('auth-pwd');
+      i.type = i.type === 'password' ? 'text' : 'password';
+    }
+
+    if (sessionStorage.getItem('dash_auth') === '1') {
+      document.getElementById('auth-screen').classList.add('hidden');
+      window.onload = () => load(true);
+    } else {
+      window.onload = () => {
+        const input = document.getElementById('auth-pwd');
+        if (input) input.focus();
+      }
+    }
 
     /* TOAST */
     let tTimer = null;
