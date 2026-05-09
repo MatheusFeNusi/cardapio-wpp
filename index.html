@@ -1263,48 +1263,12 @@
         observacao: ''
       };
 
-      try {
-        // Se não veio com ?tel= na URL, pula o webhook e vai direto pro WhatsApp da loja
-        if (semTelefone) {
-          openWhatsAppOrder(payload);
-          document.getElementById('drawerContent').style.display = 'none';
-          document.getElementById('successScreen').style.display = 'flex';
-          cart = {};
-          document.getElementById('cartCount').textContent = '0';
-          document.getElementById('floatBar').classList.remove('visible');
-          return;
-        }
-
-        const response = await fetch(N8N_WEBHOOK, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!response.ok) throw new Error('Webhook indisponível');
-        document.getElementById('drawerContent').style.display = 'none';
-        document.getElementById('successScreen').style.display = 'flex';
-        cart = {};
-        document.getElementById('cartCount').textContent = '0';
-        document.getElementById('floatBar').classList.remove('visible');
-        
-        // Redireciona para o WhatsApp após sucesso no webhook
-        setTimeout(() => {
-          openWhatsAppOrder(payload);
-        }, 800); // Pequeno delay para o usuário ver a tela de sucesso antes de sair
-      } catch (e) {
-        try {
-          openWhatsAppOrder(payload);
-          document.getElementById('drawerContent').style.display = 'none';
-          document.getElementById('successScreen').style.display = 'flex';
-          cart = {};
-          document.getElementById('cartCount').textContent = '0';
-          document.getElementById('floatBar').classList.remove('visible');
-        } catch (error) {
-          btn.disabled = false;
-          btn.textContent = '✅ Enviar pedido pelo WhatsApp';
-          alert('Não foi possível enviar agora. Configure o número do WhatsApp da loja no arquivo ou tente novamente.');
-        }
-      }
+      openWhatsAppOrder(payload);
+      document.getElementById('drawerContent').style.display = 'none';
+      document.getElementById('successScreen').style.display = 'flex';
+      cart = {};
+      document.getElementById('cartCount').textContent = '0';
+      document.getElementById('floatBar').classList.remove('visible');
     }
 
     loadProdutos();
