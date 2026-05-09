@@ -1286,6 +1286,11 @@
         cart = {};
         document.getElementById('cartCount').textContent = '0';
         document.getElementById('floatBar').classList.remove('visible');
+        
+        // Redireciona para o WhatsApp após sucesso no webhook
+        setTimeout(() => {
+          openWhatsAppOrder(payload);
+        }, 800); // Pequeno delay para o usuário ver a tela de sucesso antes de sair
       } catch (e) {
         try {
           openWhatsAppOrder(payload);
