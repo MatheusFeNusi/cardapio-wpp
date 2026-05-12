@@ -1191,7 +1191,7 @@
       const numero = WHATSAPP_NUMBER.replace(/\D/g, '') || telefone.replace(/\D/g, '');
       if (!numero) throw new Error('Número do WhatsApp não configurado');
 
-      const url = `https://wa.me/${numero}?text=${encodeURIComponent(buildOrderMessage(payload))}`;
+      const url = `https://wa.me/${numero}`;
       window.location.href = url;
     }
 
@@ -1281,8 +1281,7 @@
         // Redireciona para o WhatsApp com mensagem simplificada
         setTimeout(() => {
           const numero = WHATSAPP_NUMBER.replace(/\D/g, '') || (telefone ? telefone.replace(/\D/g, '') : '');
-          const msg = encodeURIComponent('Olá! Acabei de fazer um pedido pelo site.');
-          window.location.href = `https://wa.me/${numero}?text=${msg}`;
+          window.location.href = `https://wa.me/${numero}`;
         }, 800);
         
       } catch (e) {
