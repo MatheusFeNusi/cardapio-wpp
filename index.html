@@ -187,7 +187,7 @@
     .product-card {
       background: var(--white);
       cursor: pointer;
-      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s, box-shadow 0.2s;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -199,13 +199,37 @@
       scroll-snap-align: start;
     }
     .product-card.selected-card {
-      border-color: var(--amber);
-      box-shadow: 0 4px 0 var(--amber);
+      border-color: var(--success);
+      box-shadow: 0 4px 0 #1b5e20;
+    }
+    .selection-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--success);
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: bold;
+      z-index: 5;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      border: 2px solid white;
+    }
+    .selected-card .selection-badge {
+      opacity: 1;
+      transform: scale(1);
     }
     .product-card.added-anim {
-      transform: scale(0.95);
+      transform: scale(0.92);
       box-shadow: 0 0 0 var(--border);
-      border-color: var(--success);
     }
     .badge-novo {
       position: absolute;
@@ -223,8 +247,12 @@
 
     .product-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 10px 0 #f2a900;
-      border-color: #f2a900;
+      box-shadow: 0 10px 0 var(--border);
+      border-color: var(--amber-light);
+    }
+    .product-card.selected-card:hover {
+      box-shadow: 0 10px 0 #1b5e20;
+      border-color: var(--success);
     }
 
     .product-img {
@@ -265,9 +293,25 @@
       line-height: 1.2;
     }
 
-    .product-desc { display: none; }
+    .product-desc {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+      line-height: 1.3;
+      margin-top: 0.2rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
 
-    .product-price { display: none; }
+    .product-price {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--amber);
+      margin-top: 0.4rem;
+    }
 
     .add-btn { display: none; }
 
@@ -774,6 +818,15 @@
       <div class="cart-items" id="cartItemsList"></div>
 
       <div class="order-form" id="orderForm" style="display:none">
+
+        <!-- NOME E TELEFONE (mostrado se não vier pela URL) -->
+        <div class="form-group" id="dadosPessoaisField" style="display:none">
+          <label>Seu Nome</label>
+          <input class="input-field" id="nomeInput" type="text" placeholder="Como quer ser chamado?" style="margin-bottom:0.8rem">
+          <label>Seu WhatsApp</label>
+          <input class="input-field" id="telefoneInput" type="tel" placeholder="(00) 00000-0000" maxlength="15" oninput="maskTelefone(this)">
+        </div>
+
         <div class="form-group">
           <label>Tipo de entrega</label>
           <div class="toggle-row">
@@ -1020,13 +1073,14 @@
           const placeholderStyle = p.imagem_url ? 'display:none' : '';
 
           card.innerHTML = `
+        <div class="selection-badge">✓</div>
         <div class="badge-novo">NOVO</div>
         ${imgHtml}
         <div class="product-img-placeholder" style="${placeholderStyle}">${p.emoji}</div>
         <div class="product-info">
           <div class="product-name">${p.nome}</div>
           ${p.descricao ? `<div class="product-desc">${p.descricao}</div>` : ''}
-          <div class="product-price">R${parseFloat(p.preco).toFixed(2).replace('.', ',')}</div>
+          <div class="product-price">R$ ${parseFloat(p.preco).toFixed(2).replace('.', ',')}</div>
         </div>
       `;
           carouselRow.appendChild(card);
@@ -1158,10 +1212,21 @@
       el.value = v;
     }
 
+    function maskTelefone(el) {
+      let v = el.value.replace(/\D/g, '');
+      if (v.length > 11) v = v.substring(0, 11);
+      if (v.length > 2) v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
+      if (v.length > 8) v = v.replace(/(\d{4,5})(\d{4})$/, '$1-$2');
+      el.value = v;
+    }
+
     function openCart() {
       document.getElementById('overlay').classList.add('open');
       document.getElementById('cartDrawer').classList.add('open');
       document.body.style.overflow = 'hidden';
+      if (!telefone || !nomeParam) {
+        document.getElementById('dadosPessoaisField').style.display = 'block';
+      }
     }
 
     function closeCart() {
@@ -1199,13 +1264,33 @@
       const items = Object.values(cart);
       if (items.length === 0) return alert('Adicione itens ao carrinho!');
 
+      let finalTelefone = telefone;
+      let finalNome = nomeParam;
+
+      if (!telefone || !nomeParam) {
+        finalNome = finalNome || document.getElementById('nomeInput').value.trim();
+        let telDigitado = document.getElementById('telefoneInput').value.replace(/\D/g, '');
+        if (telDigitado && telDigitado.length >= 10) {
+          if (!telDigitado.startsWith('55')) telDigitado = '55' + telDigitado;
+          finalTelefone = finalTelefone || telDigitado;
+        }
+
+        if (!finalNome) {
+          alert('Por favor, informe seu nome!');
+          return;
+        }
+        if (!finalTelefone) {
+          alert('Por favor, informe um WhatsApp válido!');
+          return;
+        }
+      }
+
       if (tipoEntrega === 'entrega' && !document.getElementById('addressInput').value.trim()) {
         alert('Informe o endereço de entrega!');
         return;
       }
 
-      // Se não veio telefone pela URL, manda direto pelo WhatsApp (fluxo manual)
-      const semTelefone = !telefone;
+      const semTelefone = !finalTelefone;
 
       if (formaPagamento === 'pix' && !semTelefone) {
         const cpf = document.getElementById('cpfInput').value.replace(/\D/g, '');
@@ -1227,11 +1312,11 @@
         evento: 'pedido_criado',
         pedido_id_externo: pedidoId,
         criado_em: new Date().toISOString(),
-        telefone,
-        nome: nomeParam,
+        telefone: finalTelefone,
+        nome: finalNome,
         cliente: {
-          telefone,
-          nome: nomeParam,
+          telefone: finalTelefone,
+          nome: finalNome,
           cpf: document.getElementById('cpfInput').value.replace(/\D/g, '') || ''
         },
         itens: items.map(i => ({

@@ -684,6 +684,15 @@
       <div class="cart-items" id="cartItemsList"></div>
 
       <div class="order-form" id="orderForm" style="display:none">
+
+        <!-- NOME E TELEFONE (mostrado se não vier pela URL) -->
+        <div class="form-group" id="dadosPessoaisField" style="display:none">
+          <label>Seu Nome</label>
+          <input class="input-field" id="nomeInput" type="text" placeholder="Como quer ser chamado?" style="margin-bottom:0.8rem">
+          <label>Seu WhatsApp</label>
+          <input class="input-field" id="telefoneInput" type="tel" placeholder="(00) 00000-0000" maxlength="15" oninput="maskTelefone(this)">
+        </div>
+
         <div class="form-group">
           <label>Tipo de entrega</label>
           <div class="toggle-row">
@@ -1006,10 +1015,21 @@
       el.value = v;
     }
 
+    function maskTelefone(el) {
+      let v = el.value.replace(/\D/g, '');
+      if (v.length > 11) v = v.substring(0, 11);
+      if (v.length > 2) v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
+      if (v.length > 8) v = v.replace(/(\d{4,5})(\d{4})$/, '$1-$2');
+      el.value = v;
+    }
+
     function openCart() {
       document.getElementById('overlay').classList.add('open');
       document.getElementById('cartDrawer').classList.add('open');
       document.body.style.overflow = 'hidden';
+      if (!telefone || !nomeParam) {
+        document.getElementById('dadosPessoaisField').style.display = 'block';
+      }
     }
 
     function closeCart() {
@@ -1047,12 +1067,35 @@
       const items = Object.values(cart);
       if (items.length === 0) return alert('Adicione itens ao carrinho!');
 
+      let finalTelefone = telefone;
+      let finalNome = nomeParam;
+
+      if (!telefone || !nomeParam) {
+        finalNome = finalNome || document.getElementById('nomeInput').value.trim();
+        let telDigitado = document.getElementById('telefoneInput').value.replace(/\D/g, '');
+        if (telDigitado && telDigitado.length >= 10) {
+          if (!telDigitado.startsWith('55')) telDigitado = '55' + telDigitado;
+          finalTelefone = finalTelefone || telDigitado;
+        }
+
+        if (!finalNome) {
+          alert('Por favor, informe seu nome!');
+          return;
+        }
+        if (!finalTelefone) {
+          alert('Por favor, informe um WhatsApp válido!');
+          return;
+        }
+      }
+
       if (tipoEntrega === 'entrega' && !document.getElementById('addressInput').value.trim()) {
         alert('Informe o endereço de entrega!');
         return;
       }
 
-      if (formaPagamento === 'pix') {
+      const semTelefone = !finalTelefone;
+
+      if (formaPagamento === 'pix' && !semTelefone) {
         const cpf = document.getElementById('cpfInput').value.replace(/\D/g, '');
         if (cpf.length !== 11) { alert('Informe um CPF válido com 11 dígitos!'); return; }
       }
@@ -1072,11 +1115,11 @@
         evento: 'pedido_criado',
         pedido_id_externo: pedidoId,
         criado_em: new Date().toISOString(),
-        telefone,
-        nome: nomeParam,
+        telefone: finalTelefone,
+        nome: finalNome,
         cliente: {
-          telefone,
-          nome: nomeParam,
+          telefone: finalTelefone,
+          nome: finalNome,
           cpf: document.getElementById('cpfInput').value.replace(/\D/g, '') || ''
         },
         itens: items.map(i => ({
