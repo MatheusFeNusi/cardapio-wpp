@@ -831,7 +831,7 @@
           <label>Tipo de entrega</label>
           <div class="toggle-row">
             <button class="toggle-opt active" id="optRetirada" onclick="setEntrega('retirada')">🏃 Retirada</button>
-            <button class="toggle-opt" id="optEntrega" onclick="setEntrega('entrega')">🛵 Entrega (+R$5)</button>
+            <button class="toggle-opt" id="optEntrega" onclick="setEntrega('entrega')">🛵 Entrega</button>
           </div>
         </div>
 
@@ -867,7 +867,7 @@
         </div>
         <div class="total-row" id="taxaRow" style="display:none">
           <span class="total-label">Taxa de entrega</span>
-          <span class="total-value">R$5,00</span>
+          <span class="total-value" id="taxaEntregaVal">R$5,00</span>
         </div>
         <div class="divider"></div>
         <div class="total-row">
@@ -888,7 +888,12 @@
     <div class="success-screen" id="successScreen">
       <div class="success-icon">✅</div>
       <h3>Pedido enviado!</h3>
-      <p>Seu pedido foi registrado e você receberá a confirmação pelo WhatsApp em instantes.</p>
+      <p id="successMsg">Seu pedido foi registrado e você receberá a confirmação pelo WhatsApp em instantes.</p>
+      <div id="pixKeyBox" style="display:none; background:#f0fdf4; border:2px solid #22c55e; border-radius:16px; padding:1.2rem; margin-top:0.5rem; width:100%; text-align:center;">
+        <p style="font-weight:800; color:#166534; font-size:0.95rem; margin-bottom:0.5rem;">💳 Chave PIX para pagamento:</p>
+        <p id="pixKeyText" style="font-family:monospace; font-size:1rem; font-weight:700; color:#14532d; word-break:break-all; background:#dcfce7; padding:0.8rem; border-radius:10px; cursor:pointer;" onclick="copyPix(this)"></p>
+        <p style="font-size:0.8rem; color:#166534; margin-top:0.5rem;">👆 Toque na chave para copiar</p>
+      </div>
     </div>
   </div>
 
@@ -914,6 +919,31 @@
     const N8N_WEBHOOK       = 'https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-pedido-site';
     const PRODUTOS_BUCKET   = 'produtos';                                 // ← bucket no Supabase Storage
     const WHATSAPP_NUMBER   = '5511954803405';                            // ← número da loja (fallback)
+
+    const LOJA_LAT = -12.9714; // ← CONFIGURAR: latitude real da loja
+    const LOJA_LNG = -38.5014; // ← CONFIGURAR: longitude real da loja
+    const CHAVE_PIX = 'CONFIGURAR_CHAVE_PIX_AQUI'; // ← chave PIX da loja
+
+    function haversineKm(lat1, lng1, lat2, lng2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 +
+        Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+        Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function calcTaxaPorKm(km) {
+      if (km <= 2) return 5;
+      if (km <= 3) return 6;
+      if (km <= 4) return 8;
+      if (km <= 5) return 10;
+      if (km <= 6) return 12;
+      if (km <= 7) return 14;
+      if (km <= 8) return 16;
+      return null; // fora da área
+    }
 
     const HAS_SUPABASE_CONFIG =
       SUPABASE_ANON_KEY &&
@@ -985,6 +1015,7 @@
     let produtos = [];
     let tipoEntrega = 'retirada';
     let formaPagamento = 'pix';
+    let taxaEntrega = 0;
 
     if (nomeParam) {
       document.getElementById('heroSection').style.display = 'flex';
@@ -1123,7 +1154,7 @@
       const items = Object.values(cart);
       const total = items.reduce((s, i) => s + i.preco * i.qty, 0);
       const count = items.reduce((s, i) => s + i.qty, 0);
-      const taxa = tipoEntrega === 'entrega' ? 5 : 0;
+      const taxa = taxaEntrega;
       const grand = total + taxa;
 
       document.getElementById('cartCount').textContent = count;
@@ -1150,7 +1181,7 @@
     }
 
     function renderCartItems(items, subtotal, grand) {
-      const taxa = tipoEntrega === 'entrega' ? 5 : 0;
+      const taxa = taxaEntrega;
       const list = document.getElementById('cartItemsList');
       const emptyCart = document.getElementById('emptyCart');
       const orderForm = document.getElementById('orderForm');
@@ -1186,13 +1217,84 @@
       document.getElementById('subtotalVal').textContent = 'R$' + subtotal.toFixed(2).replace('.', ',');
       document.getElementById('totalVal').textContent = 'R$' + grand.toFixed(2).replace('.', ',');
       document.getElementById('taxaRow').style.display = taxa > 0 ? 'flex' : 'none';
+      document.getElementById('taxaEntregaVal').textContent = `R$${Number(taxa).toFixed(2).replace('.', ',')}`;
     }
 
-    function setEntrega(tipo) {
+    async function setEntrega(tipo) {
       tipoEntrega = tipo;
       document.getElementById('optRetirada').classList.toggle('active', tipo === 'retirada');
       document.getElementById('optEntrega').classList.toggle('active', tipo === 'entrega');
       document.getElementById('addressField').style.display = tipo === 'entrega' ? 'block' : 'none';
+
+      if (tipo === 'entrega') {
+        taxaEntrega = 5; // default enquanto calcula
+        const btnEntrega = document.getElementById('optEntrega');
+        btnEntrega.textContent = '🛵 Calculando frete...';
+        btnEntrega.disabled = true;
+        updateCartUI();
+
+        try {
+          const pos = await new Promise((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
+          );
+          const dist = haversineKm(LOJA_LAT, LOJA_LNG, pos.coords.latitude, pos.coords.longitude);
+          const taxa = calcTaxaPorKm(dist);
+
+          if (taxa === null) {
+            alert('Você está fora da nossa área de entrega (máximo 8 km). Entre em contato pelo WhatsApp!');
+            setEntrega('retirada');
+            return;
+          }
+
+          taxaEntrega = taxa;
+          btnEntrega.textContent = `🛵 Entrega — R$${taxa.toFixed(2).replace('.', ',')} (${dist.toFixed(1)} km)`;
+        } catch (e) {
+          // Geolocalização negada ou falhou → mostra selector de distância
+          taxaEntrega = 5;
+          btnEntrega.textContent = '🛵 Entrega (+R$5)';
+          mostrarSeletorDistancia();
+        } finally {
+          btnEntrega.disabled = false;
+        }
+      } else {
+        taxaEntrega = 0;
+        document.getElementById('optEntrega').textContent = '🛵 Entrega';
+        const sel = document.getElementById('distanciaSelector');
+        if (sel) sel.remove();
+      }
+
+      updateCartUI();
+    }
+
+    function mostrarSeletorDistancia() {
+      // Remove selector anterior se existir
+      const prev = document.getElementById('distanciaSelector');
+      if (prev) prev.remove();
+
+      const div = document.createElement('div');
+      div.id = 'distanciaSelector';
+      div.className = 'form-group';
+      div.innerHTML = `
+        <label>📍 Selecione sua distância aproximada</label>
+        <select class="input-field" onchange="setDistanciaManual(this.value)" style="background-color: var(--white); color: var(--dark); font-weight: 600; padding: 0.8rem 1.2rem; border-radius: 999px;">
+          <option value="">Selecione...</option>
+          <option value="2">Até 2 km — R$5,00</option>
+          <option value="3">3 km — R$6,00</option>
+          <option value="4">4 km — R$8,00</option>
+          <option value="5">5 km — R$10,00</option>
+          <option value="6">6 km — R$12,00</option>
+          <option value="7">7 km — R$14,00</option>
+          <option value="8">8 km — R$16,00</option>
+        </select>
+      `;
+      document.getElementById('addressField').after(div);
+    }
+
+    function setDistanciaManual(km) {
+      if (!km) return;
+      taxaEntrega = calcTaxaPorKm(parseFloat(km));
+      document.getElementById('optEntrega').textContent =
+        `🛵 Entrega — R$${taxaEntrega.toFixed(2).replace('.', ',')}`;
       updateCartUI();
     }
 
@@ -1242,7 +1344,7 @@
         ...payload.itens.map(i => `- ${i.quantidade}x ${i.nome} - R$${i.subtotal.toFixed(2).replace('.', ',')}`),
         '',
         `Subtotal: R$${payload.subtotal.toFixed(2).replace('.', ',')}`,
-        `Entrega: ${payload.tipo_entrega === 'entrega' ? 'Entrega' : 'Retirada'}`,
+        `Entrega: ${payload.tipo_entrega === 'entrega' ? `Entrega — R$${payload.taxa_entrega.toFixed(2).replace('.', ',')}` : 'Retirada'}`,
         payload.tipo_entrega === 'entrega' ? `Endereço: ${payload.endereco}` : '',
         `Pagamento: ${payload.forma_pagamento.toUpperCase()}`,
         payload.forma_pagamento === 'dinheiro' && payload.valor_troco ? `Troco para: R$${payload.valor_troco.toFixed(2).replace('.', ',')}` : '',
@@ -1258,6 +1360,13 @@
 
       const url = `https://wa.me/${numero}`;
       window.location.href = url;
+    }
+
+    function copyPix(el) {
+      navigator.clipboard.writeText(el.textContent).then(() => {
+        el.textContent = '✅ Copiado!';
+        setTimeout(() => { el.textContent = CHAVE_PIX; }, 2000);
+      });
     }
 
     async function submitOrder() {
@@ -1301,7 +1410,7 @@
       btn.disabled = true;
       btn.textContent = 'Enviando...';
 
-      const taxa = tipoEntrega === 'entrega' ? 5 : 0;
+      const taxa = taxaEntrega;
       const subtotal = items.reduce((s, i) => s + i.preco * i.qty, 0);
 
       const pedidoId = 'site-' + Date.now();
@@ -1356,6 +1465,14 @@
         });
         
         if (!response.ok) throw new Error('Webhook indisponível');
+
+        // Mostrar chave PIX se pagamento for PIX
+        if (formaPagamento === 'pix' && CHAVE_PIX && !CHAVE_PIX.includes('CONFIGURAR')) {
+          document.getElementById('pixKeyBox').style.display = 'block';
+          document.getElementById('pixKeyText').textContent = CHAVE_PIX;
+          document.getElementById('successMsg').textContent =
+            'Pedido recebido! Faça o pagamento via PIX abaixo e aguarde a confirmação pelo WhatsApp:';
+        }
         
         document.getElementById('drawerContent').style.display = 'none';
         document.getElementById('successScreen').style.display = 'flex';
@@ -1363,11 +1480,13 @@
         document.getElementById('cartCount').textContent = '0';
         document.getElementById('floatBar').classList.remove('visible');
         
-        // Redireciona para o WhatsApp com mensagem simplificada
-        setTimeout(() => {
-          const numero = WHATSAPP_NUMBER.replace(/\D/g, '') || (telefone ? telefone.replace(/\D/g, '') : '');
-          window.location.href = `https://wa.me/${numero}`;
-        }, 800);
+        // Redireciona para o WhatsApp com mensagem simplificada se não for PIX
+        if (formaPagamento !== 'pix' || !CHAVE_PIX || CHAVE_PIX.includes('CONFIGURAR')) {
+          setTimeout(() => {
+            const numero = WHATSAPP_NUMBER.replace(/\D/g, '') || (telefone ? telefone.replace(/\D/g, '') : '');
+            window.location.href = `https://wa.me/${numero}`;
+          }, 800);
+        }
         
       } catch (e) {
         // Fallback para WhatsApp direto em caso de erro no webhook

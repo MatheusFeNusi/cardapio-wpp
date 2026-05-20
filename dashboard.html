@@ -873,6 +873,10 @@
     const SBH = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
     const SBH2 = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
 
+    const N8N_NOTIF_URL   = 'https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-notif-status';
+    const N8N_SECRET      = 'acaraje@2025#seguro';
+    const MOTOBOY_WA      = '55119XXXXXXXX'; // ← CONFIGURAR: número do motoboy (55 + DDD + número)
+
     let pedidos = [], filter = 'ativos', known = new Set(), cdTimer = null, cdVal = 30;
 
     /* AUTH */
@@ -947,7 +951,7 @@
       try {
         console.log('Iniciando carga de pedidos...');
         const r = await fetch(
-          `${SB_URL}/rest/v1/pedidos?created_at=gte.${hoje.toISOString()}&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at,asaas_payment_id,asaas_payment_link&order=created_at.desc&limit=200`,
+          `${SB_URL}/rest/v1/pedidos?created_at=gte.${hoje.toISOString()}&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,distancia_km,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at,asaas_payment_id,asaas_payment_link&order=created_at.desc&limit=200`,
           { headers: SBH2 }
         );
         if (!r.ok) {
@@ -1051,10 +1055,12 @@
         }).join('');
 
         let acts = '';
-        if (p.status === 'pago') acts += `<button class="act a-preparo" onclick="upd('${p.id}','em_preparo')">🔥 Iniciar</button>`;
+        if (p.status === 'aguardando_pagamento' && p.forma_pagamento === 'pix')
+          acts += `<button class="act a-preparo" onclick="confirmarPix('${p.id}')">✅ Confirmar PIX</button>`;
+        else if (p.status === 'pago') acts += `<button class="act a-preparo" onclick="upd('${p.id}','em_preparo')">🔥 Iniciar</button>`;
         else if (p.status === 'aguardando_pagamento' && p.forma_pagamento !== 'pix') acts += `<button class="act a-preparo" onclick="upd('${p.id}','em_preparo')">🔥 Iniciar</button>`;
         else if (p.status === 'em_preparo') acts += `<button class="act a-pronto" onclick="upd('${p.id}','pronto')">✅ Pronto</button>`;
-        else if (p.status === 'pronto' && p.tipo_entrega === 'entrega') acts += `<button class="act a-entrega" onclick="upd('${p.id}','saiu_entrega')">🛵 Saiu</button>`;
+        else if (p.status === 'pronto' && p.tipo_entrega === 'entrega') acts += `<button class="act a-entrega" onclick="enviarMotoboy('${p.id}')">🛵 Saiu</button>`;
         else if (p.status === 'pronto' && p.tipo_entrega !== 'entrega') acts += `<button class="act a-entregue" onclick="upd('${p.id}','entregue')">📦 Entregar</button>`;
         else if (p.status === 'saiu_entrega') acts += `<button class="act a-entregue" onclick="upd('${p.id}','entregue')">📦 Entregue</button>`;
         
@@ -1100,6 +1106,101 @@
       }
     }
 
+    async function confirmarPix(id) {
+      const p = pedidos.find(x => x.id === id);
+      if (!p) return;
+      if (!confirm(`Confirmar PIX do pedido de ${p.nome_cliente || 'cliente'}?\nIsso vai marcar como "Em Preparo" e notificar o cliente.`)) return;
+
+      const btns = document.querySelectorAll(`#c-${id} .act`);
+      btns.forEach(b => b.disabled = true);
+
+      try {
+        // 1. Atualiza status no Supabase
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: { ...SBH, Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'em_preparo' })
+        });
+        if (!r.ok) throw new Error('Erro ao atualizar status: ' + r.status);
+
+        // 2. Notifica cliente via VPS2 (mensagem "PIX confirmado!")
+        await fetch(N8N_NOTIF_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            N8N_SHARED_SECRET: N8N_SECRET,
+            status:        'pix_confirmado',
+            pedido_id:     p.id,
+            nome_cliente:  p.nome_cliente || '',
+            telefone:      p.telefone || '',
+            tipo_entrega:  p.tipo_entrega || 'retirada',
+            total:         p.total || 0,
+            forma_pagamento: p.forma_pagamento || 'pix'
+          })
+        }).catch(e => console.warn('Notif PIX:', e.message));
+
+        // 3. Atualiza localmente
+        if (p) p.status = 'em_preparo';
+        stats(); render();
+        toast('✅ PIX confirmado! Cliente notificado.');
+
+      } catch (e) {
+        toast('❌ Erro: ' + e.message);
+        btns.forEach(b => b.disabled = false);
+      }
+    }
+
+    async function enviarMotoboy(id) {
+      const p = pedidos.find(x => x.id === id);
+      if (!p) return;
+
+      // Pede número do motoboy (usa default ou deixa editar)
+      const numMotoboy = prompt(
+        `Número do motoboy (com 55 + DDD):`,
+        MOTOBOY_WA
+      );
+      if (!numMotoboy) return; // cancelado
+
+      const btns = document.querySelectorAll(`#c-${id} .act`);
+      btns.forEach(b => b.disabled = true);
+
+      try {
+        // 1. Atualiza status
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: { ...SBH, Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'saiu_entrega' })
+        });
+        if (!r.ok) throw new Error('Erro ao atualizar status: ' + r.status);
+
+        // 2. Notifica cliente + motoboy via VPS2
+        await fetch(N8N_NOTIF_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            N8N_SHARED_SECRET: N8N_SECRET,
+            status:          'saiu_entrega',
+            pedido_id:       p.id,
+            nome_cliente:    p.nome_cliente || '',
+            telefone:        p.telefone || '',
+            tipo_entrega:    p.tipo_entrega || 'entrega',
+            endereco:        p.endereco || p.endereco_entrega || '',
+            total:           p.total || 0,
+            forma_pagamento: p.forma_pagamento || 'dinheiro',
+            motoboy_telefone: numMotoboy.replace(/\D/g, '')
+          })
+        }).catch(e => console.warn('Notif motoboy:', e.message));
+
+        if (p) p.status = 'saiu_entrega';
+        stats(); render();
+        toast('🛵 Motoboy notificado! Pedido saiu para entrega.');
+
+      } catch (e) {
+        toast('❌ Erro: ' + e.message);
+        btns.forEach(b => b.disabled = false);
+      }
+    }
+
     async function upd(id, st) {
       const btns = document.querySelectorAll(`#c-${id} .act`);
       btns.forEach(b => b.disabled = true);
@@ -1125,11 +1226,11 @@
       const tel = p.telefone || '';
       const id8 = 'Ped-' + String(p.id).slice(0, 8).toUpperCase();
       const itens = Array.isArray(p.itens) ? p.itens : [];
-      const taxa = p.tipo_entrega === 'entrega' ? 5 : 0;
+      const taxa = p.tipo_entrega === 'entrega' ? parseFloat(p.taxa_entrega || 5) : 0;
       const data = new Date(p.created_at).toLocaleString('pt-BR');
       const endStr = p.endereco || p.endereco_entrega || '';
       const iRows = itens.map(i => { const qtd = i.quantidade || i.qty || 1; const sub = parseFloat(i.subtotal) || (parseFloat(i.preco || 0) * qtd); return `<div class="pr-row"><span>${qtd}x ${i.nome || ''}</span><span>${R(sub)}</span></div>`; }).join('');
-      const taxaRow = taxa ? `<div class="pr-row"><span>Taxa entrega</span><span>R$5,00</span></div>` : '';
+      const taxaRow = taxa ? `<div class="pr-row"><span>Taxa entrega</span><span>${R(taxa)}</span></div>` : '';
       const trocoRow = (p.precisa_troco && p.valor_troco > 0) ? `<div class="pr-row"><span>Troco para</span><span>${R(p.valor_troco)}</span></div>` : '';
       document.getElementById('pBox').innerHTML = `<h3>🫓 ACARAJÉ DA BAIANA</h3><div style="text-align:center;font-size:10px;color:#888">${data}</div><hr class="sep"><div><strong>Pedido ${id8}</strong></div><div>Cliente: ${nome}</div><div>Tel: ${tel}</div><hr class="sep"><div><strong>${p.tipo_entrega === 'entrega' ? '🛵 ENTREGA' : '🏃 RETIRADA'}</strong></div>${p.tipo_entrega === 'entrega' && endStr ? `<div style="font-size:10px">${endStr}</div>` : ''}<hr class="sep"><strong>ITENS</strong>${iRows}${taxaRow}<hr class="sep"><div class="pr-row pr-total"><span>TOTAL</span><span>${R(p.total)}</span></div>${trocoRow}<div style="font-size:10px;color:#666">Pgto: ${(p.forma_pagamento || '—').toUpperCase()} · Status: ${SL[p.status] || p.status}</div><hr class="sep"><div style="text-align:center;font-size:10px;color:#aaa">Obrigada pela preferência! 💛</div>`;
       document.getElementById('pOverlay').classList.add('open');

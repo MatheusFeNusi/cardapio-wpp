@@ -24,6 +24,8 @@ ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS itens         jsonb DEFAULT '[]'::j
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS endereco      text;
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS precisa_troco boolean DEFAULT false;
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS valor_troco   numeric DEFAULT 0;
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS taxa_entrega   numeric DEFAULT 0;
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS distancia_km  numeric DEFAULT 0;
 
 -- 5. Índices
 CREATE INDEX IF NOT EXISTS idx_pedidos_telefone   ON pedidos(telefone);
