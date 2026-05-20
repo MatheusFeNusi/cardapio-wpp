@@ -838,6 +838,9 @@
         <div class="form-group address-field" id="addressField">
           <label>Endereço completo</label>
           <textarea class="input-field" id="addressInput" rows="2" placeholder="Rua, número, bairro..."></textarea>
+          <small id="addressHelper" style="font-size: 0.75rem; color: #a1a1aa; margin-top: 0.3rem; display: block;">
+            💡 O frete será calculado automaticamente ao digitar seu endereço e clicar fora do campo.
+          </small>
         </div>
 
         <div class="form-group">
@@ -920,8 +923,8 @@
     const PRODUTOS_BUCKET   = 'produtos';                                 // ← bucket no Supabase Storage
     const WHATSAPP_NUMBER   = '5511954803405';                            // ← número da loja (fallback)
 
-    const LOJA_LAT = -12.9714; // ← CONFIGURAR: latitude real da loja
-    const LOJA_LNG = -38.5014; // ← CONFIGURAR: longitude real da loja
+    const LOJA_LAT = -23.4520408; // ← CONFIGURAR: latitude real da loja (Cantídio Sampaio, 4344)
+    const LOJA_LNG = -46.6996929; // ← CONFIGURAR: longitude real da loja (Cantídio Sampaio, 4344)
     const CHAVE_PIX = 'CONFIGURAR_CHAVE_PIX_AQUI'; // ← chave PIX da loja
 
     function haversineKm(lat1, lng1, lat2, lng2) {
@@ -1016,6 +1019,7 @@
     let tipoEntrega = 'retirada';
     let formaPagamento = 'pix';
     let taxaEntrega = 0;
+    let distanciaKm = 0;
 
     if (nomeParam) {
       document.getElementById('heroSection').style.display = 'flex';
@@ -1227,43 +1231,83 @@
       document.getElementById('addressField').style.display = tipo === 'entrega' ? 'block' : 'none';
 
       if (tipo === 'entrega') {
-        taxaEntrega = 5; // default enquanto calcula
-        const btnEntrega = document.getElementById('optEntrega');
-        btnEntrega.textContent = '🛵 Calculando frete...';
-        btnEntrega.disabled = true;
-        updateCartUI();
-
-        try {
-          const pos = await new Promise((resolve, reject) =>
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
-          );
-          const dist = haversineKm(LOJA_LAT, LOJA_LNG, pos.coords.latitude, pos.coords.longitude);
-          const taxa = calcTaxaPorKm(dist);
-
-          if (taxa === null) {
-            alert('Você está fora da nossa área de entrega (máximo 8 km). Entre em contato pelo WhatsApp!');
-            setEntrega('retirada');
-            return;
-          }
-
-          taxaEntrega = taxa;
-          btnEntrega.textContent = `🛵 Entrega — R$${taxa.toFixed(2).replace('.', ',')} (${dist.toFixed(1)} km)`;
-        } catch (e) {
-          // Geolocalização negada ou falhou → mostra selector de distância
-          taxaEntrega = 5;
-          btnEntrega.textContent = '🛵 Entrega (+R$5)';
-          mostrarSeletorDistancia();
-        } finally {
-          btnEntrega.disabled = false;
+        const addrInput = document.getElementById('addressInput');
+        const address = addrInput.value.trim();
+        if (address) {
+          await calcularFretePorEndereco(address);
+        } else {
+          taxaEntrega = 5; // default temporário
+          document.getElementById('optEntrega').textContent = '🛵 Entrega';
+          addrInput.focus();
+          updateCartUI();
         }
       } else {
         taxaEntrega = 0;
         document.getElementById('optEntrega').textContent = '🛵 Entrega';
         const sel = document.getElementById('distanciaSelector');
         if (sel) sel.remove();
+        updateCartUI();
       }
+    }
 
-      updateCartUI();
+    async function calcularFretePorEndereco(address) {
+      if (!address || address.trim().length < 5) return;
+      if (tipoEntrega !== 'entrega') return;
+
+      const btnEntrega = document.getElementById('optEntrega');
+      btnEntrega.textContent = '🛵 Calculando frete...';
+      btnEntrega.disabled = true;
+
+      try {
+        let query = address.trim();
+        // Se o usuário não digitar São Paulo ou SP, complementamos para melhorar a precisão no Nominatim
+        if (!query.toLowerCase().includes('são paulo') && !query.toLowerCase().includes('sp')) {
+          query += ', São Paulo, SP';
+        }
+
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        });
+        if (!response.ok) throw new Error('Serviço de geolocalização indisponível');
+
+        const data = await response.json();
+        if (!data || data.length === 0) {
+          throw new Error('Endereço não localizado');
+        }
+
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+
+        const dist = haversineKm(LOJA_LAT, LOJA_LNG, lat, lng);
+        const taxa = calcTaxaPorKm(dist);
+
+        if (taxa === null) {
+          alert(`O endereço digitado está a ${dist.toFixed(1)} km, que é fora da nossa área de entrega (máximo de 8 km). Por favor, ajuste o endereço ou fale conosco pelo WhatsApp!`);
+          setEntrega('retirada');
+          return;
+        }
+
+        taxaEntrega = taxa;
+        distanciaKm = dist;
+        btnEntrega.textContent = `🛵 Entrega — R$${taxa.toFixed(2).replace('.', ',')} (${dist.toFixed(1)} km)`;
+
+        // Remove o seletor manual se já estiver na tela
+        const prev = document.getElementById('distanciaSelector');
+        if (prev) prev.remove();
+
+      } catch (err) {
+        console.error('Erro ao calcular frete:', err);
+        // Fallback: abre o seletor de distância manual
+        taxaEntrega = 5;
+        btnEntrega.textContent = '🛵 Entrega (+R$5)';
+        mostrarSeletorDistancia();
+      } finally {
+        btnEntrega.disabled = false;
+        updateCartUI();
+      }
     }
 
     function mostrarSeletorDistancia() {
@@ -1292,7 +1336,8 @@
 
     function setDistanciaManual(km) {
       if (!km) return;
-      taxaEntrega = calcTaxaPorKm(parseFloat(km));
+      distanciaKm = parseFloat(km);
+      taxaEntrega = calcTaxaPorKm(distanciaKm);
       document.getElementById('optEntrega').textContent =
         `🛵 Entrega — R$${taxaEntrega.toFixed(2).replace('.', ',')}`;
       updateCartUI();
@@ -1448,6 +1493,7 @@
         valor_troco: parseFloat(document.getElementById('trocoInput').value.replace(',', '.')) || 0,
         subtotal: parseFloat(subtotal.toFixed(2)),
         taxa_entrega: taxa,
+        distancia_km: distanciaKm,
         total: totalPedido,
         totais: {
           subtotal: parseFloat(subtotal.toFixed(2)),
@@ -1497,6 +1543,13 @@
         document.getElementById('cartCount').textContent = '0';
         document.getElementById('floatBar').classList.remove('visible');
       }
+    }
+
+    const addrInput = document.getElementById('addressInput');
+    if (addrInput) {
+      addrInput.addEventListener('change', (e) => {
+        calcularFretePorEndereco(e.target.value);
+      });
     }
 
     loadProdutos();
