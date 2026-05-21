@@ -697,7 +697,7 @@
           <label>Tipo de entrega</label>
           <div class="toggle-row">
             <button class="toggle-opt active" id="optRetirada" onclick="setEntrega('retirada')">🏃 Retirada</button>
-            <button class="toggle-opt" id="optEntrega" onclick="setEntrega('entrega')">🛵 Entrega (+R$5)</button>
+            <button class="toggle-opt" id="optEntrega" onclick="setEntrega('entrega')">🛵 Entrega</button>
           </div>
         </div>
 
@@ -729,7 +729,7 @@
         </div>
         <div class="total-row" id="taxaRow" style="display:none">
           <span class="total-label">Taxa de entrega</span>
-          <span class="total-value">R$5,00</span>
+          <span class="total-value" id="taxaEntregaVal">R$5,00</span>
         </div>
         <div class="divider"></div>
         <div class="total-row">
@@ -852,6 +852,84 @@
       showAlert(msg);
     };
 
+    function haversineKm(lat1, lng1, lat2, lng2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 +
+        Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+        Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function calcTaxaPorKm(km) {
+      if (km <= 2) return 5;
+      if (km <= 3) return 6;
+      if (km <= 4) return 8;
+      if (km <= 5) return 10;
+      if (km <= 6) return 12;
+      if (km <= 7) return 14;
+      if (km <= 8) return 16;
+      return null; // fora da área
+    }
+
+    async function calcularFretePorEndereco(address) {
+      if (!address || address.trim().length < 5) return;
+      if (tipoEntrega !== 'entrega') return;
+
+      const btnEntrega = document.getElementById('optEntrega');
+      btnEntrega.textContent = '🛵 Calculando frete...';
+      btnEntrega.disabled = true;
+
+      try {
+        let query = address.trim();
+        if (!query.toLowerCase().includes('são paulo') && !query.toLowerCase().includes('sp')) {
+          query += ', São Paulo, SP';
+        }
+
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        });
+        if (!response.ok) throw new Error('Serviço de geolocalização indisponível');
+
+        const data = await response.json();
+        if (!data || data.length === 0) {
+          throw new Error('Endereço não localizado');
+        }
+
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+
+        const dist = haversineKm(LOJA_LAT, LOJA_LNG, lat, lng);
+        const taxa = calcTaxaPorKm(dist);
+
+        if (taxa === null) {
+          alert(`O endereço digitado está a ${dist.toFixed(1)} km, que é fora da nossa área de entrega (máximo de 8 km). Por favor, ajuste o endereço ou fale conosco pelo WhatsApp!`);
+          taxaEntrega = null;
+          distanciaKm = dist;
+          btnEntrega.textContent = `🛵 Fora da área de entrega (${dist.toFixed(1)} km)`;
+          updateCartUI();
+          return;
+        }
+
+        taxaEntrega = taxa;
+        distanciaKm = dist;
+        btnEntrega.textContent = `🛵 Entrega — R$${taxa.toFixed(2).replace('.', ',')} (${dist.toFixed(1)} km)`;
+
+      } catch (err) {
+        console.error('Erro ao calcular frete:', err);
+        taxaEntrega = 5;
+        distanciaKm = 2;
+        btnEntrega.textContent = `🛵 Entrega — R$5,00`;
+      } finally {
+        btnEntrega.disabled = false;
+        updateCartUI();
+      }
+    }
+
     const LOCAL_PRODUTOS = [
       {
         id: 'acaraje-tradicional',
@@ -917,6 +995,10 @@
     let produtos = [];
     let tipoEntrega = 'retirada';
     let formaPagamento = 'pix';
+    let taxaEntrega = 0;
+    let distanciaKm = 0;
+    const LOJA_LAT = -23.4520408;
+    const LOJA_LNG = -46.6996929;
 
     if (nomeParam) {
       document.getElementById('heroSection').style.display = 'flex';
@@ -1017,7 +1099,7 @@
       const items = Object.values(cart);
       const total = items.reduce((s, i) => s + i.preco * i.qty, 0);
       const count = items.reduce((s, i) => s + i.qty, 0);
-      const taxa = tipoEntrega === 'entrega' ? 5 : 0;
+      const taxa = (taxaEntrega === null || taxaEntrega === undefined) ? 0 : taxaEntrega;
       const grand = total + taxa;
 
       document.getElementById('cartCount').textContent = count;
@@ -1034,7 +1116,7 @@
     }
 
     function renderCartItems(items, subtotal, grand) {
-      const taxa = tipoEntrega === 'entrega' ? 5 : 0;
+      const taxa = (taxaEntrega === null || taxaEntrega === undefined) ? 0 : taxaEntrega;
       const list = document.getElementById('cartItemsList');
       const emptyCart = document.getElementById('emptyCart');
       const orderForm = document.getElementById('orderForm');
@@ -1070,14 +1152,31 @@
       document.getElementById('subtotalVal').textContent = 'R$' + subtotal.toFixed(2).replace('.', ',');
       document.getElementById('totalVal').textContent = 'R$' + grand.toFixed(2).replace('.', ',');
       document.getElementById('taxaRow').style.display = taxa > 0 ? 'flex' : 'none';
+      document.getElementById('taxaEntregaVal').textContent = `R$${Number(taxa).toFixed(2).replace('.', ',')}`;
     }
 
-    function setEntrega(tipo) {
+    async function setEntrega(tipo) {
       tipoEntrega = tipo;
       document.getElementById('optRetirada').classList.toggle('active', tipo === 'retirada');
       document.getElementById('optEntrega').classList.toggle('active', tipo === 'entrega');
       document.getElementById('addressField').style.display = tipo === 'entrega' ? 'block' : 'none';
-      updateCartUI();
+
+      if (tipo === 'entrega') {
+        const addrInput = document.getElementById('addressInput');
+        const address = addrInput.value.trim();
+        if (address) {
+          await calcularFretePorEndereco(address);
+        } else {
+          taxaEntrega = 5; // default temporário
+          document.getElementById('optEntrega').textContent = '🛵 Entrega';
+          addrInput.focus();
+          updateCartUI();
+        }
+      } else {
+        taxaEntrega = 0;
+        document.getElementById('optEntrega').textContent = '🛵 Entrega';
+        updateCartUI();
+      }
     }
 
     function setPagamento(tipo) {
@@ -1160,9 +1259,16 @@
         }
       }
 
-      if (tipoEntrega === 'entrega' && !document.getElementById('addressInput').value.trim()) {
-        alert('Informe o endereço de entrega!');
-        return;
+      if (tipoEntrega === 'entrega') {
+        const address = document.getElementById('addressInput').value.trim();
+        if (!address) {
+          alert('Informe o endereço de entrega!');
+          return;
+        }
+        if (taxaEntrega === null) {
+          alert('O endereço digitado está fora de nossa área de entrega (máximo de 8 km). Por favor, informe um endereço válido ou mude para Retirada.');
+          return;
+        }
       }
 
       const semTelefone = !finalTelefone;
@@ -1171,7 +1277,7 @@
       btn.disabled = true;
       btn.textContent = 'Enviando...';
 
-      const taxa = tipoEntrega === 'entrega' ? 5 : 0;
+      const taxa = (taxaEntrega === null || taxaEntrega === undefined) ? 0 : taxaEntrega;
       const subtotal = items.reduce((s, i) => s + i.preco * i.qty, 0);
 
       const pedidoId = 'site-' + Date.now();
@@ -1201,6 +1307,7 @@
         valor_troco: parseFloat(document.getElementById('trocoInput').value.replace(',', '.')) || 0,
         subtotal: parseFloat(subtotal.toFixed(2)),
         taxa_entrega: taxa,
+        distancia_km: distanciaKm,
         total: totalPedido,
         totais: {
           subtotal: parseFloat(subtotal.toFixed(2)),
@@ -1236,6 +1343,25 @@
           alert('Não foi possível enviar agora. Configure o número do WhatsApp da loja no arquivo ou tente novamente.');
         }
       }
+    }
+
+    const addrInput = document.getElementById('addressInput');
+    let debounceTimeout;
+    if (addrInput) {
+      // Calcula o frete enquanto o cliente digita (após 1 segundo de pausa)
+      addrInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimeout);
+        const value = e.target.value;
+        debounceTimeout = setTimeout(() => {
+          calcularFretePorEndereco(value);
+        }, 1000);
+      });
+
+      // Calcula o frete imediatamente ao perder o foco
+      addrInput.addEventListener('change', (e) => {
+        clearTimeout(debounceTimeout);
+        calcularFretePorEndereco(e.target.value);
+      });
     }
 
     loadProdutos();
