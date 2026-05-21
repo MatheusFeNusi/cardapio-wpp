@@ -1326,8 +1326,6 @@
       } else {
         taxaEntrega = 0;
         document.getElementById('optEntrega').textContent = '🛵 Entrega';
-        const sel = document.getElementById('distanciaSelector');
-        if (sel) sel.remove();
         updateCartUI();
       }
     }
@@ -1382,47 +1380,14 @@
 
       } catch (err) {
         console.error('Erro ao calcular frete:', err);
-        // Fallback: abre o seletor de distância manual
+        // Fallback automático (sem seletor manual): define taxa padrão de R$ 5,00
         taxaEntrega = 5;
-        btnEntrega.textContent = '🛵 Entrega (+R$5)';
-        mostrarSeletorDistancia();
+        distanciaKm = 2;
+        btnEntrega.textContent = `🛵 Entrega — R$5,00`;
       } finally {
         btnEntrega.disabled = false;
         updateCartUI();
       }
-    }
-
-    function mostrarSeletorDistancia() {
-      // Remove selector anterior se existir
-      const prev = document.getElementById('distanciaSelector');
-      if (prev) prev.remove();
-
-      const div = document.createElement('div');
-      div.id = 'distanciaSelector';
-      div.className = 'form-group';
-      div.innerHTML = `
-        <label>📍 Selecione sua distância aproximada</label>
-        <select class="input-field" onchange="setDistanciaManual(this.value)" style="background-color: var(--white); color: var(--dark); font-weight: 600; padding: 0.8rem 1.2rem; border-radius: 999px;">
-          <option value="">Selecione...</option>
-          <option value="2">Até 2 km — R$5,00</option>
-          <option value="3">3 km — R$6,00</option>
-          <option value="4">4 km — R$8,00</option>
-          <option value="5">5 km — R$10,00</option>
-          <option value="6">6 km — R$12,00</option>
-          <option value="7">7 km — R$14,00</option>
-          <option value="8">8 km — R$16,00</option>
-        </select>
-      `;
-      document.getElementById('addressField').after(div);
-    }
-
-    function setDistanciaManual(km) {
-      if (!km) return;
-      distanciaKm = parseFloat(km);
-      taxaEntrega = calcTaxaPorKm(distanciaKm);
-      document.getElementById('optEntrega').textContent =
-        `🛵 Entrega — R$${taxaEntrega.toFixed(2).replace('.', ',')}`;
-      updateCartUI();
     }
 
     function setPagamento(tipo) {
