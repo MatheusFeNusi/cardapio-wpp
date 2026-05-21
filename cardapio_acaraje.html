@@ -720,6 +720,11 @@
           <label>Precisa de troco?</label>
           <input class="input-field" id="trocoInput" type="tel" placeholder="Troco para R$ (opcional)">
         </div>
+
+        <div class="form-group">
+          <label>Alguma observação?</label>
+          <textarea class="input-field" id="obsInput" rows="2" placeholder="Ex: Sem cebola, extra camarão..." style="resize:vertical;min-height:50px"></textarea>
+        </div>
       </div>
 
       <div class="order-footer" id="orderFooter" style="display:none">
@@ -1348,7 +1353,7 @@
           taxa_entrega: taxa,
           total: totalPedido
         },
-        observacao: ''
+        observacao: (document.getElementById('obsInput') ? document.getElementById('obsInput').value.trim() : '')
       };
 
       try {

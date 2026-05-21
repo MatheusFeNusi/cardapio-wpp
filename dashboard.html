@@ -1121,6 +1121,20 @@
     const N8N_SECRET      = 'acaraje@2025#seguro';
     const MOTOBOY_WA      = '55119XXXXXXXX'; // ← CONFIGURAR: número do motoboy (55 + DDD + número)
 
+    /* PREVENÇÃO DE DUPLICATA DE WEBHOOK (GAP 2)
+       Salva no localStorage a chave webhook_{id}_{status} com TTL de 30s.
+       Retorna true se pode disparar, false se já foi disparado recentemente. */
+    function webhookGuard(id, status) {
+      const key = `webhook_${id}_${status}`;
+      const last = localStorage.getItem(key);
+      if (last && (Date.now() - parseInt(last)) < 30000) {
+        console.warn('Webhook duplicado bloqueado:', key);
+        return false;
+      }
+      localStorage.setItem(key, Date.now().toString());
+      return true;
+    }
+
     let pedidos = [], filter = 'ativos', known = new Set(), cdTimer = null, cdVal = 30;
 
     /* AUTH */
@@ -1357,6 +1371,12 @@
       const confirmed = await showConfirm(`Confirmar PIX do pedido de ${p.nome_cliente || 'cliente'}?\nIsso vai marcar como "Em Preparo" e notificar o cliente.`, 'Confirmar Pagamento');
       if (!confirmed) return;
 
+      // Prevenção de duplicata
+      if (!webhookGuard(id, 'pix_confirmado')) {
+        toast('⏳ Ação já processada, aguarde...');
+        return;
+      }
+
       const btns = document.querySelectorAll(`#c-${id} .act`);
       btns.forEach(b => b.disabled = true);
 
@@ -1408,6 +1428,12 @@
       );
       if (!numMotoboy) return; // cancelado
 
+      // Prevenção de duplicata
+      if (!webhookGuard(id, 'saiu_entrega')) {
+        toast('⏳ Ação já processada, aguarde...');
+        return;
+      }
+
       const btns = document.querySelectorAll(`#c-${id} .act`);
       btns.forEach(b => b.disabled = true);
 
@@ -1449,9 +1475,16 @@
     }
 
     async function upd(id, st) {
+      // Prevenção de duplicata
+      if (!webhookGuard(id, st)) {
+        toast('⏳ Ação já processada, aguarde...');
+        return;
+      }
+
       const btns = document.querySelectorAll(`#c-${id} .act`);
       btns.forEach(b => b.disabled = true);
       try {
+        // 1. Atualiza status no Supabase
         const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
           method: 'PATCH', headers: { ...SBH, Prefer: 'return=minimal' },
           body: JSON.stringify({ status: st })
@@ -1460,8 +1493,31 @@
           const errText = await r.text();
           throw new Error(`${r.status}: ${errText}`);
         }
+
+        // 2. Notifica cliente via n8n webhook
         const p = pedidos.find(x => x.id === id);
-        if (p) p.status = st;
+        if (p) {
+          const webhookPayload = {
+            N8N_SHARED_SECRET: N8N_SECRET,
+            status:          st,
+            pedido_id:       p.id,
+            nome_cliente:    p.nome_cliente || p.nome_cliente_pedido || '',
+            telefone:        p.telefone || '',
+            tipo_entrega:    p.tipo_entrega || 'retirada',
+            endereco:        p.endereco || p.endereco_entrega || '',
+            total:           p.total || 0,
+            forma_pagamento: p.forma_pagamento || ''
+          };
+
+          await fetch(N8N_NOTIF_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-secret': N8N_SECRET },
+            body: JSON.stringify(webhookPayload)
+          }).catch(e => console.warn('Webhook status notif:', e.message));
+
+          p.status = st;
+        }
+
         stats(); render(); toast('Status: ' + (SL[st] || st));
       } catch (e) { toast('Erro: ' + e.message); btns.forEach(b => b.disabled = false); }
     }
@@ -1503,6 +1559,67 @@
         const input = document.getElementById('auth-pwd');
         if (input) input.focus();
       }
+    }
+
+    /* SUPABASE REALTIME (GAP 3) — WebSocket nativo
+       Assina INSERT e UPDATE na tabela pedidos para atualização em tempo real.
+       Mantém o polling de 30s como fallback em caso de desconexão. */
+    function initRealtime() {
+      if (localStorage.getItem('dash_auth') !== '1') return;
+
+      try {
+        const wsUrl = SB_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0';
+        const ws = new WebSocket(wsUrl);
+        let heartbeatTimer = null;
+        let ref = 0;
+
+        ws.onopen = () => {
+          console.log('🔌 Realtime conectado');
+          // Heartbeat a cada 30s para manter a conexão viva
+          heartbeatTimer = setInterval(() => {
+            ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++ref) }));
+          }, 30000);
+
+          // Assinar a tabela pedidos (INSERT + UPDATE)
+          ws.send(JSON.stringify({
+            topic: 'realtime:public:pedidos',
+            event: 'phx_join',
+            payload: { config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: [
+              { event: 'INSERT', schema: 'public', table: 'pedidos' },
+              { event: 'UPDATE', schema: 'public', table: 'pedidos' }
+            ] } },
+            ref: String(++ref)
+          }));
+        };
+
+        ws.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data);
+            if (msg.event === 'postgres_changes' || msg.event === 'INSERT' || msg.event === 'UPDATE') {
+              console.log('📡 Realtime event:', msg.event);
+              load(false); // Recarrega sem mostrar spinner
+            }
+          } catch (e) { /* ignore parse errors */ }
+        };
+
+        ws.onclose = (ev) => {
+          clearInterval(heartbeatTimer);
+          console.warn('🔌 Realtime desconectado, reconectando em 5s...', ev.reason);
+          setTimeout(initRealtime, 5000);
+        };
+
+        ws.onerror = (err) => {
+          console.warn('🔌 Realtime erro:', err);
+          ws.close();
+        };
+      } catch (e) {
+        console.warn('Realtime não disponível:', e);
+      }
+    }
+
+    // Iniciar realtime após login
+    if (localStorage.getItem('dash_auth') === '1') {
+      setTimeout(initRealtime, 2000);
     }
 
     /* TOAST */
