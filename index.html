@@ -1030,6 +1030,41 @@
       return null; // fora da área
     }
 
+    function cleanAddress(addr) {
+      let cleaned = addr;
+      // 1. Remover parênteses e o conteúdo dentro deles (ex: "(Zona Norte)", "(apto 12)")
+      cleaned = cleaned.replace(/\([^)]*\)/g, '');
+      
+      // 2. Remover complementos comuns
+      cleaned = cleaned.replace(/(?:,\s*)?(?:apto|apt|apartamento|casa|bloco|bl|sobrado|fundos|sala|andar|nº|num)\s*[a-zA-Z0-9-]+\b/gi, '');
+      cleaned = cleaned.replace(/(?:,\s*)?(?:fundos|sobrado)\b/gi, '');
+
+      // 3. Se houver hífen, separar e pegar a primeira parte (geralmente rua e número)
+      if (cleaned.includes('-')) {
+        const parts = cleaned.split('-');
+        const firstPart = parts[0].trim();
+        if (/\d/.test(firstPart) || firstPart.length > 10) {
+          cleaned = firstPart;
+        } else {
+          cleaned = cleaned.replace(/-/g, ' ');
+        }
+      }
+
+      // 4. Remover CEPs (ex: 02617-060 ou 02617060) para não confundir o Nominatim
+      cleaned = cleaned.replace(/\d{5}-\d{3}/g, '');
+      cleaned = cleaned.replace(/\d{8}/g, '');
+
+      // 5. Remover espaços extras
+      cleaned = cleaned.trim().replace(/\s+/g, ' ');
+
+      // Garantir cidade e estado
+      if (!cleaned.toLowerCase().includes('são paulo') && !cleaned.toLowerCase().includes('sp')) {
+        cleaned += ', São Paulo, SP';
+      }
+
+      return cleaned;
+    }
+
     const HAS_SUPABASE_CONFIG =
       SUPABASE_ANON_KEY &&
       !SUPABASE_ANON_KEY.includes('COLE_SUA_ANON_KEY_AQUI') &&
@@ -1339,13 +1374,11 @@
       btnEntrega.disabled = true;
 
       try {
-        let query = address.trim();
-        // Se o usuário não digitar São Paulo ou SP, complementamos para melhorar a precisão no Nominatim
-        if (!query.toLowerCase().includes('são paulo') && !query.toLowerCase().includes('sp')) {
-          query += ', São Paulo, SP';
-        }
+        const query = cleanAddress(address);
 
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+        // Bounding box de ~16km em volta do restaurante para evitar resultados de outras cidades
+        const viewbox = "-46.85,-23.30,-46.55,-23.60";
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=${viewbox}&bounded=1&limit=1`;
         const response = await fetch(url, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
