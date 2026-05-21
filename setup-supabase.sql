@@ -26,6 +26,7 @@ ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS precisa_troco boolean DEFAULT false
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS valor_troco   numeric DEFAULT 0;
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS taxa_entrega   numeric DEFAULT 0;
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS distancia_km  numeric DEFAULT 0;
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS motoboy_telefone text;
 
 -- 5. Índices
 CREATE INDEX IF NOT EXISTS idx_pedidos_telefone   ON pedidos(telefone);
@@ -77,32 +78,52 @@ INSERT INTO configuracoes (chave, valor, descricao)
 VALUES ('dashboard_senha', 'baiana@2025', 'Senha de acesso ao painel do operador')
 ON CONFLICT (chave) DO NOTHING;
 
--- 11. Trigger: notifica WhatsApp quando pedido fica pronto
-CREATE OR REPLACE FUNCTION fn_notificar_pedido_pronto()
+-- 11. Trigger: notifica WhatsApp quando pedido muda de status relevante
+CREATE OR REPLACE FUNCTION fn_notificar_status_update()
 RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  v_url     TEXT;
+  v_secret  TEXT;
 BEGIN
-  IF NEW.status = 'pronto' AND (OLD.status IS DISTINCT FROM 'pronto') THEN
-    PERFORM net.http_post(
-      url     := 'https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-notif-pronto',
-      headers := '{"Content-Type":"application/json","x-secret":"acaraje@2025#seguro"}'::jsonb,
-      body    := json_build_object(
-        'pedido_id',    NEW.id,
-        'telefone',     NEW.telefone,
-        'nome_cliente', COALESCE(NEW.nome_cliente, NEW.nome_cliente_pedido, ''),
-        'total',        NEW.total,
-        'tipo_entrega', NEW.tipo_entrega,
-        'endereco',     COALESCE(NEW.endereco, NEW.endereco_entrega, '')
-      )::text
-    );
+  -- Dispara webhook apenas se o status mudou para um dos status monitorados
+  IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status IN ('pronto', 'saiu_entrega', 'entregue', 'cancelado') THEN
+    SELECT valor INTO v_url    FROM configuracoes WHERE chave = 'n8n_notif_url';
+    SELECT valor INTO v_secret FROM configuracoes WHERE chave = 'n8n_notif_secret';
+
+    IF v_url IS NOT NULL AND v_url <> '' THEN
+      PERFORM net.http_post(
+        url     := v_url::text,
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'x-secret',     COALESCE(v_secret, '')
+        ),
+        body    := jsonb_build_object(
+          'status',          NEW.status,
+          'pedido_id',       NEW.id,
+          'telefone',        NEW.telefone,
+          'nome_cliente',    COALESCE(NEW.nome_cliente, NEW.nome_cliente_pedido, ''),
+          'total',           NEW.total,
+          'tipo_entrega',    NEW.tipo_entrega,
+          'endereco',        COALESCE(NEW.endereco, NEW.endereco_entrega, ''),
+          'forma_pagamento', NEW.forma_pagamento,
+          'motoboy_telefone', COALESCE(NEW.motoboy_telefone, '')
+        )
+      );
+    END IF;
   END IF;
   RETURN NEW;
 END;
 $$;
 
+-- Remover triggers antigas duplicadas
 DROP TRIGGER IF EXISTS trg_notificar_pronto ON pedidos;
-CREATE TRIGGER trg_notificar_pronto
+DROP TRIGGER IF EXISTS trg_pedido_status_change ON pedidos;
+DROP TRIGGER IF EXISTS trg_notificar_status ON pedidos;
+
+-- Adicionar a nova trigger unificada de atualização de status
+CREATE TRIGGER trg_notificar_status
   AFTER UPDATE OF status ON pedidos
-  FOR EACH ROW EXECUTE FUNCTION fn_notificar_pedido_pronto();
+  FOR EACH ROW EXECUTE FUNCTION fn_notificar_status_update();
 
 -- 12. Recarregar PostgREST
 NOTIFY pgrst, 'reload schema';

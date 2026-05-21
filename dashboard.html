@@ -1117,8 +1117,6 @@
       }
     };
 
-    const N8N_NOTIF_URL   = 'https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-notif-status';
-    const N8N_SECRET      = 'acaraje@2025#seguro';
     const MOTOBOY_WA      = '55119XXXXXXXX'; // ← CONFIGURAR: número do motoboy (55 + DDD + número)
 
     /* PREVENÇÃO DE DUPLICATA DE WEBHOOK (GAP 2)
@@ -1368,7 +1366,7 @@
     async function confirmarPix(id) {
       const p = pedidos.find(x => x.id === id);
       if (!p) return;
-      const confirmed = await showConfirm(`Confirmar PIX do pedido de ${p.nome_cliente || 'cliente'}?\nIsso vai marcar como "Em Preparo" e notificar o cliente.`, 'Confirmar Pagamento');
+      const confirmed = await showConfirm(`Confirmar PIX do pedido de ${p.nome_cliente || 'cliente'}?\nIsso vai marcar como "Em Preparo".`, 'Confirmar Pagamento');
       if (!confirmed) return;
 
       // Prevenção de duplicata
@@ -1389,26 +1387,10 @@
         });
         if (!r.ok) throw new Error('Erro ao atualizar status: ' + r.status);
 
-        // 2. Notifica cliente via VPS2 (mensagem "PIX confirmado!")
-        await fetch(N8N_NOTIF_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            N8N_SHARED_SECRET: N8N_SECRET,
-            status:        'pix_confirmado',
-            pedido_id:     p.id,
-            nome_cliente:  p.nome_cliente || '',
-            telefone:      p.telefone || '',
-            tipo_entrega:  p.tipo_entrega || 'retirada',
-            total:         p.total || 0,
-            forma_pagamento: p.forma_pagamento || 'pix'
-          })
-        }).catch(e => console.warn('Notif PIX:', e.message));
-
-        // 3. Atualiza localmente
+        // 2. Atualiza localmente
         if (p) p.status = 'em_preparo';
         stats(); render();
-        toast('✅ PIX confirmado! Cliente notificado.');
+        toast('✅ PIX confirmado!');
 
       } catch (e) {
         toast('❌ Erro: ' + e.message);
@@ -1438,35 +1420,23 @@
       btns.forEach(b => b.disabled = true);
 
       try {
-        // 1. Atualiza status
+        // 1. Atualiza status e telefone do motoboy no Supabase
         const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
           method: 'PATCH',
           headers: { ...SBH, Prefer: 'return=minimal' },
-          body: JSON.stringify({ status: 'saiu_entrega' })
+          body: JSON.stringify({
+            status: 'saiu_entrega',
+            motoboy_telefone: numMotoboy.replace(/\D/g, '')
+          })
         });
         if (!r.ok) throw new Error('Erro ao atualizar status: ' + r.status);
 
-        // 2. Notifica cliente + motoboy via VPS2
-        await fetch(N8N_NOTIF_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            N8N_SHARED_SECRET: N8N_SECRET,
-            status:          'saiu_entrega',
-            pedido_id:       p.id,
-            nome_cliente:    p.nome_cliente || '',
-            telefone:        p.telefone || '',
-            tipo_entrega:    p.tipo_entrega || 'entrega',
-            endereco:        p.endereco || p.endereco_entrega || '',
-            total:           p.total || 0,
-            forma_pagamento: p.forma_pagamento || 'dinheiro',
-            motoboy_telefone: numMotoboy.replace(/\D/g, '')
-          })
-        }).catch(e => console.warn('Notif motoboy:', e.message));
-
-        if (p) p.status = 'saiu_entrega';
+        if (p) {
+          p.status = 'saiu_entrega';
+          p.motoboy_telefone = numMotoboy.replace(/\D/g, '');
+        }
         stats(); render();
-        toast('🛵 Motoboy notificado! Pedido saiu para entrega.');
+        toast('🛵 Pedido marcado como saiu para entrega!');
 
       } catch (e) {
         toast('❌ Erro: ' + e.message);
@@ -1494,27 +1464,9 @@
           throw new Error(`${r.status}: ${errText}`);
         }
 
-        // 2. Notifica cliente via n8n webhook
+        // 2. Atualiza status localmente
         const p = pedidos.find(x => x.id === id);
         if (p) {
-          const webhookPayload = {
-            N8N_SHARED_SECRET: N8N_SECRET,
-            status:          st,
-            pedido_id:       p.id,
-            nome_cliente:    p.nome_cliente || p.nome_cliente_pedido || '',
-            telefone:        p.telefone || '',
-            tipo_entrega:    p.tipo_entrega || 'retirada',
-            endereco:        p.endereco || p.endereco_entrega || '',
-            total:           p.total || 0,
-            forma_pagamento: p.forma_pagamento || ''
-          };
-
-          await fetch(N8N_NOTIF_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-secret': N8N_SECRET },
-            body: JSON.stringify(webhookPayload)
-          }).catch(e => console.warn('Webhook status notif:', e.message));
-
           p.status = st;
         }
 
