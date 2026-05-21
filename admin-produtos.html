@@ -230,6 +230,120 @@ const SB_URL = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbWJleG50cnhnenhna3ZocGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Njk2OTUsImV4cCI6MjA5MzE0NTY5NX0.Tq_WsZGMNRDw4Zme9YBuw2i6fJIy6WYz3xFvbdcOmno';
 const SBH  = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
 
+function showConfirm(message, title = "Confirmar") {
+  return new Promise((resolve) => {
+    const existing = document.getElementById('custom-confirm-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'custom-confirm-modal';
+    modal.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 11, 6, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      animation: fadeInModal 0.2s ease-out;
+    `;
+
+    if (!document.getElementById('custom-modal-styles')) {
+      const styles = document.createElement('style');
+      styles.id = 'custom-modal-styles';
+      styles.textContent = `
+        @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleInModal { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      `;
+      document.head.appendChild(styles);
+    }
+
+    const box = document.createElement('div');
+    box.style.cssText = `
+      background: var(--surface, #1A1208);
+      border: 3px solid var(--border2, #5A3E1A);
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      text-align: center;
+      animation: scaleInModal 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    `;
+
+    box.innerHTML = `
+      <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">❓</div>
+      <h4 style="font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--amber2, #E8720E); margin-bottom: 0.8rem;">${title}</h4>
+      <p style="font-size: 1.05rem; color: var(--text, #F0E8D8); line-height: 1.5; margin-bottom: 1.8rem; font-weight: 500; white-space: pre-line;">${message}</p>
+      <div style="display: flex; gap: 1rem; justify-content: center;">
+        <button id="confirm-cancel-btn" style="
+          background: var(--card, #211608);
+          color: var(--text2, #A09070);
+          border: 2px solid var(--border, #3A2810);
+          border-radius: 10px;
+          padding: 0.7rem 1.8rem;
+          font-size: 0.95rem;
+          font-weight: 700;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer;
+          box-shadow: 0 4px 0 var(--border, #3A2810);
+          transition: transform 0.1s, box-shadow 0.1s;
+        ">Cancelar</button>
+        <button id="confirm-ok-btn" style="
+          background: var(--red, #A02020);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          padding: 0.7rem 1.8rem;
+          font-size: 0.95rem;
+          font-weight: 700;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer;
+          box-shadow: 0 4px 0 #501010;
+          transition: transform 0.1s, box-shadow 0.1s;
+        ">Deletar</button>
+      </div>
+    `;
+
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+
+    const cancelBtn = box.querySelector('#confirm-cancel-btn');
+    const okBtn = box.querySelector('#confirm-ok-btn');
+    okBtn.focus();
+
+    const close = (result) => {
+      modal.style.opacity = '0';
+      modal.style.transition = 'opacity 0.15s';
+      setTimeout(() => modal.remove(), 150);
+      resolve(result);
+    };
+
+    cancelBtn.onmouseenter = () => { cancelBtn.style.transform = 'translateY(1px)'; cancelBtn.style.boxShadow = '0 3px 0 var(--border)'; };
+    cancelBtn.onmouseleave = () => { cancelBtn.style.transform = ''; cancelBtn.style.boxShadow = '0 4px 0 var(--border)'; };
+    cancelBtn.onmousedown = () => { cancelBtn.style.transform = 'translateY(4px)'; cancelBtn.style.boxShadow = 'none'; };
+
+    okBtn.onmouseenter = () => { okBtn.style.transform = 'translateY(1px)'; okBtn.style.boxShadow = '0 3px 0 #501010'; };
+    okBtn.onmouseleave = () => { okBtn.style.transform = ''; okBtn.style.boxShadow = '0 4px 0 #501010'; };
+    okBtn.onmousedown = () => { okBtn.style.transform = 'translateY(4px)'; okBtn.style.boxShadow = 'none'; };
+
+    cancelBtn.onclick = () => close(false);
+    okBtn.onclick = () => close(true);
+    modal.onclick = (e) => { if (e.target === modal) close(false); };
+  });
+}
+
+// Sobrescrever alert nativo com o toast da página
+window.alert = function(msg) {
+  if (typeof toast === 'function') {
+    toast(msg);
+  } else {
+    console.log("Alert:", msg);
+  }
+};
+
 /* AUTH */
 let dashSenha = null;
 async function fetchSenha() {
@@ -404,7 +518,8 @@ async function toggleDisp(id, novoValor) {
 }
 
 async function deletar(id, nome) {
-  if (!confirm(`Deletar "${nome}"? Esta ação não pode ser desfeita.`)) return;
+  const confirmed = await showConfirm(`Deletar "${nome}"? Esta ação não pode ser desfeita.`, 'Deletar Produto');
+  if (!confirmed) return;
   try {
     const r = await fetch(`${SB_URL}/rest/v1/produtos?id=eq.${id}`, {
       method: 'DELETE',
