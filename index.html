@@ -1240,7 +1240,7 @@
       const items = Object.values(cart);
       const total = items.reduce((s, i) => s + i.preco * i.qty, 0);
       const count = items.reduce((s, i) => s + i.qty, 0);
-      const taxa = taxaEntrega;
+      const taxa = (taxaEntrega === null || taxaEntrega === undefined) ? 0 : taxaEntrega;
       const grand = total + taxa;
 
       document.getElementById('cartCount').textContent = count;
@@ -1267,7 +1267,7 @@
     }
 
     function renderCartItems(items, subtotal, grand) {
-      const taxa = taxaEntrega;
+      const taxa = (taxaEntrega === null || taxaEntrega === undefined) ? 0 : taxaEntrega;
       const list = document.getElementById('cartItemsList');
       const emptyCart = document.getElementById('emptyCart');
       const orderForm = document.getElementById('orderForm');
@@ -1366,7 +1366,10 @@
 
         if (taxa === null) {
           alert(`O endereço digitado está a ${dist.toFixed(1)} km, que é fora da nossa área de entrega (máximo de 8 km). Por favor, ajuste o endereço ou fale conosco pelo WhatsApp!`);
-          setEntrega('retirada');
+          taxaEntrega = null;
+          distanciaKm = dist;
+          btnEntrega.textContent = `🛵 Fora da área de entrega (${dist.toFixed(1)} km)`;
+          updateCartUI();
           return;
         }
 
@@ -1477,9 +1480,16 @@
         }
       }
 
-      if (tipoEntrega === 'entrega' && !document.getElementById('addressInput').value.trim()) {
-        alert('Informe o endereço de entrega!');
-        return;
+      if (tipoEntrega === 'entrega') {
+        const address = document.getElementById('addressInput').value.trim();
+        if (!address) {
+          alert('Informe o endereço de entrega!');
+          return;
+        }
+        if (taxaEntrega === null) {
+          alert('O endereço digitado está fora de nossa área de entrega (máximo de 8 km). Por favor, informe um endereço válido ou mude para Retirada.');
+          return;
+        }
       }
 
       const semTelefone = !finalTelefone;
