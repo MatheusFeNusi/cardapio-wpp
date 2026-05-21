@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Painel do Motoboy — Acarajé da Baiana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --bg: #F5EBDC;
+      --surface: #FFFFFF;
+      --card: #FFFFFF;
+      --border: #E8D8C3;
+      --amber: #D62300;
+      --amber-dark: #A51B00;
+      --orange: #FF8732;
+      --gold: #F2A900;
+      --green: #2D8B37;
+      --blue: #1A5FA0;
+      --red: #D62300;
+      --brown: #502314;
+      --brown-light: #8c6a5d;
+      --text: #502314;
+      --text2: #7A5C51;
+      --text3: #A68A80;
+      --radius: 20px;
+      --shadow: 0 8px 30px rgba(80, 35, 20, 0.08);
+      --dark: #502314;
+      --border2: #5A3E1A;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      font-size: 1.1rem;
+    }
+
+    /* AUTH SCREEN */
+    #auth-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    #auth-screen.hidden {
+      display: none
+    }
+
+    .auth-box {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem 2rem;
+      width: 90%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 12px 0 var(--border)
+    }
+
+    .auth-logo {
+      font-size: 3rem;
+      background: var(--orange);
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      box-shadow: 0 4px 0 #D96D1E;
+      border: 3px solid #fff;
+    }
+
+    .auth-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--amber);
+      margin-bottom: .3rem
+    }
+
+    .auth-sub {
+      font-size: 1.1rem;
+      color: var(--text2);
+      margin-bottom: 1.8rem;
+      font-weight: 500
+    }
+
+    .auth-input {
+      width: 100%;
+      background: #FDF9F3;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem;
+      color: var(--brown);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      outline: none;
+      margin-bottom: 1rem;
+      text-align: center;
+      transition: all .2s;
+      box-shadow: 0 3px 0 var(--border);
+    }
+
+    .auth-input:focus {
+      border-color: var(--orange);
+      background: #fff;
+      box-shadow: 0 3px 0 var(--orange);
+    }
+
+    .auth-btn {
+      width: 100%;
+      background: var(--amber);
+      border: none;
+      border-radius: 12px;
+      padding: 1.1rem;
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all .1s;
+      box-shadow: 0 4px 0 var(--amber-dark);
+    }
+
+    .auth-btn:hover {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #b51c00
+    }
+
+    .auth-btn:active {
+      transform: translateY(4px);
+      box-shadow: none
+    }
+
+    .auth-err {
+      color: var(--red);
+      font-size: .85rem;
+      margin-top: .6rem;
+      min-height: 1.2rem;
+      font-weight: 600
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--brown);
+      padding: 1.2rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .brand {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #F5EBDC;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    .brand small {
+      color: var(--gold);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem
+    }
+
+    .countdown-txt {
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-family: 'DM Mono', monospace;
+      font-weight: 600
+    }
+
+    .btn-sm {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #ffffff;
+      border-radius: 8px;
+      padding: .5rem 1rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+      text-decoration: none;
+      display: inline-block
+    }
+
+    .btn-sm:hover {
+      background: rgba(255, 255, 255, 0.3)
+    }
+
+    .btn-refresh {
+      background: var(--gold);
+      color: var(--text);
+      box-shadow: 0 3px 0 #d99600
+    }
+
+    .btn-refresh:hover {
+      transform: translateY(1px);
+      box-shadow: 0 2px 0 #d99600;
+      background: #fcd55c
+    }
+
+    .btn-refresh:active {
+      transform: translateY(3px);
+      box-shadow: none
+    }
+
+    /* GRID / CONTAINER */
+    .grid {
+      padding: 1.5rem 1rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 5rem 1rem;
+      color: var(--text3)
+    }
+
+    .empty-ic {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    .empty-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--green);
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-text {
+      font-size: 1.1rem;
+      color: var(--text2);
+      font-weight: 500;
+    }
+
+    .loading-wrap {
+      text-align: center;
+      padding: 4rem;
+      color: var(--text3);
+      font-weight: 600
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 4px solid var(--border);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 1rem
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    /* CARD DESIGN */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 6px 0 var(--border);
+      transition: all 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--orange);
+    }
+
+    .card-top {
+      padding: 1.2rem;
+      background: #FFFBF5;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .order-id {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text3);
+      letter-spacing: 0.05em;
+    }
+
+    .badge {
+      padding: 0.5rem 1rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .b-saiu_entrega { background: #FFF3E0; color: #E65100; border: 2px solid #FFCC80; }
+
+    .card-body {
+      padding: 1.2rem;
+      flex: 1;
+    }
+
+    .cli-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--brown);
+      margin-bottom: 0.2rem;
+    }
+
+    .cli-tel {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.95rem;
+      color: var(--text3);
+      margin-bottom: 1.2rem;
+      font-weight: 600;
+    }
+
+    .info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: 1rem;
+      color: var(--text2);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .ic {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    /* WHATSAPP & MAPS ACTION BUTTONS */
+    .action-links {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .btn-link {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.75rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .btn-wa {
+      background: #E8F5E9;
+      color: var(--green);
+      border: 2px solid #A5D6A7;
+    }
+    .btn-wa:hover {
+      background: #C8E6C9;
+    }
+
+    .btn-maps {
+      background: #E3F2FD;
+      color: var(--blue);
+      border: 2px solid #90CAF9;
+    }
+    .btn-maps:hover {
+      background: #BBDEFB;
+    }
+
+    /* TROCO / CHANGE INFO */
+    .troco-box {
+      background: #FFFDEB;
+      border: 2px solid #FFE082;
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+      color: #7F5F00;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .items-box {
+      background: #FDF9F3;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 1.2rem;
+      padding: 1rem;
+    }
+
+    .it-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.8rem;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .it-row:last-child { margin-bottom: 0; }
+
+    .it-name {
+      flex: 1;
+      color: var(--brown);
+      font-weight: 700;
+    }
+
+    .it-qty {
+      color: var(--text3);
+      font-weight: 700;
+    }
+
+    .it-val {
+      font-family: 'DM Mono', monospace;
+      font-weight: 700;
+      color: var(--brown);
+    }
+
+    .tot-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 0.8rem;
+      border-top: 2px solid var(--border);
+    }
+
+    .tot-lbl {
+      font-size: 0.9rem;
+      color: var(--text3);
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .tot-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--amber);
+      letter-spacing: -0.02em;
+    }
+
+    .card-actions {
+      display: flex;
+      padding: 1.2rem;
+      background: #FFFBF5;
+      border-top: 2px solid var(--border);
+    }
+
+    .act {
+      flex: 1;
+      padding: 1rem;
+      border-radius: 12px;
+      border: none;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 4px 0 #124B80;
+    }
+
+    .act:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    .act:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: translateY(2px);
+    }
+
+    /* TOAST STYLE */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--dark);
+      color: #fff;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      font-size: .95rem;
+      font-weight: 700;
+      z-index: 3000;
+      box-shadow: 0 8px 20px rgba(80, 35, 20, 0.3);
+      border: 2px solid #663322;
+      text-align: center;
+      width: 90%;
+      max-width: 320px;
+      animation: toastIn 0.2s ease-out;
+    }
+
+    @keyframes toastIn {
+      from { transform: translate(-50%, 10px); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="auth-screen">
+    <div class="auth-box">
+      <div class="auth-logo">🛵</div>
+      <div class="auth-title">Entregas</div>
+      <div class="auth-sub">Painel do Entregador</div>
+      <input id="auth-phone" class="auth-input" type="tel" placeholder="Telefone do Entregador..."
+        onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="auth-btn" onclick="doLogin()">Acessar Rotas</button>
+      <div class="auth-err" id="auth-err"></div>
+    </div>
+  </div>
+
+  <!-- APP HEADER -->
+  <div class="header">
+    <div class="brand">
+      Acarajé da Baiana
+      <small id="motoboy-label">Entregas</small>
+    </div>
+    <div class="header-right">
+      <span class="countdown-txt">↻ <span id="cd">30</span>s</span>
+      <button class="btn-sm btn-refresh" onclick="load(true)">⟳</button>
+      <button class="btn-sm" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- MAIN LIST -->
+  <div class="grid" id="grid">
+    <div class="loading-wrap">
+      <div class="spinner"></div>Carregando...
+    </div>
+  </div>
+
+  <script>
+    const SB_URL = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbWJleG50cnhnenhna3ZocGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Njk2OTUsImV4cCI6MjA5MzE0NTY5NX0.Tq_WsZGMNRDw4Zme9YBuw2i6fJIy6WYz3xFvbdcOmno';
+    const SBH = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+    const SBH2 = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+
+    let motoboyPhone = '';
+    let pedidos = [];
+    let cdTimer = null;
+    let cdVal = 30;
+
+    // Toast Notification helper
+    function toast(msg) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+
+    // Modal Confirmation helper
+    function showConfirm(message, title = "Confirmar") {
+      return new Promise((resolve) => {
+        const existing = document.getElementById('custom-confirm-modal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'custom-confirm-modal';
+        modal.style.cssText = `
+          position: fixed;
+          inset: 0;
+          background: rgba(15, 11, 6, 0.85);
+          backdrop-filter: blur(4px);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1.5rem;
+          animation: fadeInModal 0.2s ease-out;
+        `;
+
+        if (!document.getElementById('custom-modal-styles')) {
+          const styles = document.createElement('style');
+          styles.id = 'custom-modal-styles';
+          styles.textContent = `
+            @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes scaleInModal { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+          `;
+          document.head.appendChild(styles);
+        }
+
+        const box = document.createElement('div');
+        box.style.cssText = `
+          background: var(--surface, #1A1208);
+          border: 3px solid var(--border2, #5A3E1A);
+          border-radius: 16px;
+          padding: 2rem;
+          max-width: 420px;
+          width: 100%;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+          text-align: center;
+          animation: scaleInModal 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        `;
+
+        box.innerHTML = `
+          <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">❓</div>
+          <h4 style="font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--orange); margin-bottom: 0.8rem;">${title}</h4>
+          <p style="font-size: 1.05rem; color: var(--text); line-height: 1.5; margin-bottom: 1.8rem; font-weight: 500; white-space: pre-line;">${message}</p>
+          <div style="display: flex; gap: 1rem; justify-content: center;">
+            <button id="confirm-cancel-btn" style="
+              background: var(--card);
+              color: var(--text2);
+              border: 2px solid var(--border);
+              border-radius: 10px;
+              padding: 0.7rem 1.8rem;
+              font-size: 0.95rem;
+              font-weight: 700;
+              font-family: 'DM Sans', sans-serif;
+              cursor: pointer;
+              box-shadow: 0 4px 0 var(--border);
+              transition: transform 0.1s, box-shadow 0.1s;
+            ">Cancelar</button>
+            <button id="confirm-ok-btn" style="
+              background: var(--green);
+              color: white;
+              border: none;
+              border-radius: 10px;
+              padding: 0.7rem 1.8rem;
+              font-size: 0.95rem;
+              font-weight: 700;
+              font-family: 'DM Sans', sans-serif;
+              cursor: pointer;
+              box-shadow: 0 4px 0 #12401f;
+              transition: transform 0.1s, box-shadow 0.1s;
+            ">Confirmar</button>
+          </div>
+        `;
+
+        modal.appendChild(box);
+        document.body.appendChild(modal);
+
+        const cancelBtn = box.querySelector('#confirm-cancel-btn');
+        const okBtn = box.querySelector('#confirm-ok-btn');
+        okBtn.focus();
+
+        const close = (result) => {
+          modal.style.opacity = '0';
+          modal.style.transition = 'opacity 0.15s';
+          setTimeout(() => modal.remove(), 150);
+          resolve(result);
+        };
+
+        cancelBtn.onmouseenter = () => { cancelBtn.style.transform = 'translateY(1px)'; cancelBtn.style.boxShadow = '0 3px 0 var(--border)'; };
+        cancelBtn.onmouseleave = () => { cancelBtn.style.transform = ''; cancelBtn.style.boxShadow = '0 4px 0 var(--border)'; };
+        cancelBtn.onmousedown = () => { cancelBtn.style.transform = 'translateY(4px)'; cancelBtn.style.boxShadow = 'none'; };
+
+        okBtn.onmouseenter = () => { okBtn.style.transform = 'translateY(1px)'; okBtn.style.boxShadow = '0 3px 0 #12401f'; };
+        okBtn.onmouseleave = () => { okBtn.style.transform = ''; okBtn.style.boxShadow = '0 4px 0 #12401f'; };
+        okBtn.onmousedown = () => { okBtn.style.transform = 'translateY(4px)'; okBtn.style.boxShadow = 'none'; };
+
+        cancelBtn.onclick = () => close(false);
+        okBtn.onclick = () => close(true);
+        modal.onclick = (e) => { if (e.target === modal) close(false); };
+      });
+    }
+
+    // Phone number normalizer for Brazil (adds 55 to 10 or 11 digits numbers)
+    function normalizePhone(raw) {
+      let cleaned = raw.replace(/\D/g, '');
+      if (cleaned.length === 10 || cleaned.length === 11) {
+        cleaned = '55' + cleaned;
+      }
+      return cleaned;
+    }
+
+    // Login process
+    async function doLogin() {
+      const inputEl = document.getElementById('auth-phone');
+      const rawVal = inputEl.value.trim();
+      if (!rawVal) return;
+
+      const btn = document.querySelector('.auth-btn');
+      const errEl = document.getElementById('auth-err');
+
+      btn.disabled = true;
+      btn.textContent = 'Verificando...';
+      errEl.textContent = '';
+
+      const cleanPhone = normalizePhone(rawVal);
+
+      if (cleanPhone.length < 8) {
+        errEl.textContent = 'Por favor, insira um número válido.';
+        btn.disabled = false;
+        btn.textContent = 'Acessar Rotas';
+        return;
+      }
+
+      try {
+        // Validate access by checking endpoint connectivity
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?limit=1`, { headers: SBH2 });
+        if (!r.ok) throw new Error('Erro ao conectar ao servidor (' + r.status + ')');
+
+        motoboyPhone = cleanPhone;
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('motoboy-label').textContent = 'Motoboy: ' + formatDisplayPhone(motoboyPhone);
+        
+        load(true);
+      } catch (e) {
+        errEl.textContent = 'Erro de conexão: ' + e.message;
+        btn.disabled = false;
+        btn.textContent = 'Acessar Rotas';
+      }
+    }
+
+    // Logout process
+    function doLogout() {
+      motoboyPhone = '';
+      pedidos = [];
+      clearInterval(cdTimer);
+      document.getElementById('auth-phone').value = '';
+      document.getElementById('auth-screen').classList.remove('hidden');
+      document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
+      document.getElementById('auth-phone').focus();
+    }
+
+    // Format phone number for pretty rendering
+    function formatDisplayPhone(num) {
+      if (!num) return '';
+      let clean = num.replace(/\D/g, '');
+      if (clean.startsWith('55') && clean.length >= 12) {
+        clean = clean.substring(2);
+      }
+      if (clean.length === 11) {
+        return `(${clean.substring(0, 2)}) ${clean.substring(2, 7)}-${clean.substring(7)}`;
+      } else if (clean.length === 10) {
+        return `(${clean.substring(0, 2)}) ${clean.substring(2, 6)}-${clean.substring(6)}`;
+      }
+      return num;
+    }
+
+    // Load active orders assigned to logged in motoboy
+    async function load(showLoading = false) {
+      if (!motoboyPhone) return;
+      if (showLoading) {
+        document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
+      }
+
+      try {
+        const r = await fetch(
+          `${SB_URL}/rest/v1/pedidos?status=eq.saiu_entrega&motoboy_telefone=eq.${motoboyPhone}&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at&order=created_at.desc`,
+          { headers: SBH2 }
+        );
+        if (!r.ok) throw new Error('Erro API: ' + r.status);
+
+        pedidos = await r.json();
+        render();
+      } catch (e) {
+        console.error('Erro ao carregar pedidos:', e);
+        if (showLoading) {
+          document.getElementById('grid').innerHTML = `
+            <div class="empty">
+              <div class="empty-ic">⚠️</div>
+              <p>Falha ao carregar entregas.</p>
+              <button class="btn-sm" onclick="load(true)" style="margin-top:1rem;background:var(--amber)">Tentar Novamente</button>
+            </div>`;
+        }
+      }
+      resetCd();
+    }
+
+    // Formatting Helpers
+    const R = v => 'R$' + parseFloat(v || 0).toFixed(2).replace('.', ',');
+    const T = iso => iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+
+    // Render active orders list
+    function render() {
+      const g = document.getElementById('grid');
+      if (!pedidos.length) {
+        g.innerHTML = `
+          <div class="empty">
+            <div class="empty-ic">✅</div>
+            <div class="empty-title">Tudo limpo!</div>
+            <div class="empty-text">Nenhum pedido em rota no momento.</div>
+          </div>`;
+        return;
+      }
+
+      g.innerHTML = pedidos.map(p => {
+        const nome = p.nome_cliente || p.nome_cliente_pedido || 'Cliente';
+        const tel = p.telefone || '';
+        const id8 = 'Ped-' + String(p.id).slice(0, 8).toUpperCase();
+        const address = p.endereco || p.endereco_entrega || 'Retirada no Local';
+        const items = Array.isArray(p.itens) ? p.itens : [];
+
+        // Calculation of troco (change)
+        let trocoHtml = '';
+        if (p.forma_pagamento === 'dinheiro' && p.precisa_troco && p.valor_troco > 0) {
+          const valTroco = parseFloat(p.valor_troco);
+          const valTotal = parseFloat(p.total || 0);
+          const trocoDevolver = valTroco - valTotal;
+          if (trocoDevolver > 0) {
+            trocoHtml = `
+              <div class="troco-box">
+                <span>💵</span>
+                <span>Levar troco de <strong>${R(trocoDevolver)}</strong> (para R$ ${valTroco.toFixed(2).replace('.', ',')})</span>
+              </div>
+            `;
+          }
+        }
+
+        // Items breakdown
+        const iRows = items.map(i => {
+          const qty = i.quantidade || i.qty || 1;
+          const sub = parseFloat(i.subtotal) || (parseFloat(i.preco || 0) * qty);
+          return `
+            <div class="it-row">
+              <span class="it-name">${i.nome || ''}</span>
+              <span class="it-qty">${qty}x</span>
+              <span class="it-val">${R(sub)}</span>
+            </div>
+          `;
+        }).join('');
+
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+        const waUrl = `https://wa.me/${tel}`;
+
+        return `
+          <div class="card" id="c-${p.id}">
+            <div class="card-top">
+              <span class="order-id">${id8} · ${T(p.created_at)}</span>
+              <span class="badge b-saiu_entrega">🛵 Em Rota</span>
+            </div>
+            
+            <div class="card-body">
+              <div class="cli-name">${nome}</div>
+              <div class="cli-tel">${formatDisplayPhone(tel)}</div>
+              
+              <div class="info-row">
+                <span class="ic">📍</span>
+                <span>${address}</span>
+              </div>
+              
+              <div class="info-row">
+                <span class="ic">💳</span>
+                <span>Pagamento: <strong>${(p.forma_pagamento || '—').toUpperCase()}</strong></span>
+              </div>
+
+              ${trocoHtml}
+
+              <div class="action-links">
+                <a href="${waUrl}" target="_blank" class="btn-link btn-wa">💬 WhatsApp</a>
+                <a href="${mapsUrl}" target="_blank" class="btn-link btn-maps">📍 Rota / Maps</a>
+              </div>
+
+              <div class="items-box">
+                ${iRows}
+                <div class="tot-row">
+                  <span class="tot-lbl">Total do Pedido</span>
+                  <span class="tot-val">${R(p.total)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button class="act" onclick="confirmarEntrega('${p.id}', '${nome.replace(/'/g, "\\'")}')">✅ Entregar Pedido</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Confirm and update status to delivered (entregue)
+    async function confirmarEntrega(id, nomeCliente) {
+      const confirmed = await showConfirm(`Confirmar entrega do pedido para ${nomeCliente}?`, 'Marcar como Entregue');
+      if (!confirmed) return;
+
+      const card = document.getElementById(`c-${id}`);
+      const btn = card.querySelector('.act');
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: { ...SBH, Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'entregue' })
+        });
+        if (!r.ok) throw new Error('Status: ' + r.status);
+
+        toast('🎉 Pedido marcado como entregue com sucesso!');
+        load(true);
+      } catch (e) {
+        toast('❌ Erro ao atualizar: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = '✅ Entregar Pedido';
+      }
+    }
+
+    // Countdown logic
+    function resetCd() {
+      clearInterval(cdTimer);
+      cdVal = 30;
+      document.getElementById('cd').textContent = cdVal;
+      cdTimer = setInterval(() => {
+        cdVal--;
+        document.getElementById('cd').textContent = cdVal;
+        if (cdVal <= 0) {
+          clearInterval(cdTimer);
+          load();
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+
+</html>

@@ -4,7 +4,8 @@
   "rewrites": [
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/admin",     "destination": "/admin.html" },
-    { "source": "/painel",    "destination": "/dashboard.html" }
+    { "source": "/painel",    "destination": "/dashboard.html" },
+    { "source": "/motoboy",   "destination": "/motoboy.html" }
   ],
   "headers": [
     {
