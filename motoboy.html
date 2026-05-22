@@ -754,6 +754,7 @@
         if (!r.ok) throw new Error('Erro ao conectar ao servidor (' + r.status + ')');
 
         motoboyPhone = cleanPhone;
+        localStorage.setItem('motoboy_logged_phone', cleanPhone);
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('motoboy-label').textContent = 'Motoboy: ' + formatDisplayPhone(motoboyPhone);
         
@@ -770,6 +771,7 @@
       motoboyPhone = '';
       pedidos = [];
       clearInterval(cdTimer);
+      localStorage.removeItem('motoboy_logged_phone');
       document.getElementById('auth-phone').value = '';
       document.getElementById('auth-screen').classList.remove('hidden');
       document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
@@ -798,13 +800,14 @@
         document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
       }
       try {
+        // Query Supabase directly for active orders in route assigned to this motoboy
         const r = await fetch(
-          `https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-motoboy-pedidos?token=motoboy@acaraje2025`
+          `${SB_URL}/rest/v1/pedidos?status=eq.saiu_entrega&motoboy_telefone=eq.${motoboyPhone}&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at&order=created_at.desc`,
+          { headers: SBH2 }
         );
         if (!r.ok) throw new Error('Erro API: ' + r.status);
 
-        const data = await r.json();
-        pedidos = data.pedidos || [];
+        pedidos = await r.json();
         render();
       } catch (e) {
         console.error('Erro ao carregar pedidos:', e);
@@ -928,16 +931,26 @@
 
       const card = document.getElementById(`c-${id}`);
       const btn = card.querySelector('.act');
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
       try {
-        const r = await fetch('https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-motoboy-confirmar', {
+        // 1. Atualizar status diretamente no Supabase para remoção imediata da rota
+        const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: { ...SBH, Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'entregue' })
+        });
+        if (!r.ok) throw new Error('Status: ' + r.status);
+
+        // 2. Notificar webhook n8n em segundo plano para processos secundários (mensagens, etc.)
+        fetch('https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-motoboy-confirmar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pedido_id: id,
             token: 'motoboy@acaraje2025'
           })
-        });
-        if (!r.ok) throw new Error('Status: ' + r.status);
+        }).catch(err => console.warn('Erro ao notificar webhook de confirmação:', err));
 
         toast('🎉 Pedido marcado como entregue com sucesso!');
         load(true);
@@ -962,6 +975,15 @@
         }
       }, 1000);
     }
+
+    // Auto-login persistence check on load
+    window.onload = () => {
+      const savedPhone = localStorage.getItem('motoboy_logged_phone');
+      if (savedPhone) {
+        document.getElementById('auth-phone').value = savedPhone;
+        doLogin();
+      }
+    };
   </script>
 </body>
 
