@@ -86,7 +86,7 @@ DECLARE
   v_secret  TEXT;
 BEGIN
   -- Dispara webhook apenas se o status mudou para um dos status monitorados
-  IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status IN ('pronto', 'saiu_entrega', 'entregue', 'cancelado') THEN
+  IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status IN ('em_preparo', 'pago', 'pronto', 'saiu_entrega', 'entregue', 'cancelado') THEN
     SELECT valor INTO v_url    FROM configuracoes WHERE chave = 'n8n_notif_url';
     SELECT valor INTO v_secret FROM configuracoes WHERE chave = 'n8n_notif_secret';
 
@@ -98,7 +98,10 @@ BEGIN
           'x-secret',     COALESCE(v_secret, '')
         ),
         body    := jsonb_build_object(
-          'status',          NEW.status,
+          'status',          CASE 
+                               WHEN NEW.status IN ('em_preparo', 'pago') AND NEW.forma_pagamento = 'pix' THEN 'pix_confirmado'
+                               ELSE NEW.status
+                             END,
           'pedido_id',       NEW.id,
           'telefone',        NEW.telefone,
           'nome_cliente',    COALESCE(NEW.nome_cliente, NEW.nome_cliente_pedido, ''),
@@ -114,6 +117,7 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
 
 -- Remover triggers antigas duplicadas
 DROP TRIGGER IF EXISTS trg_notificar_pronto ON pedidos;
