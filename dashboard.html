@@ -773,6 +773,38 @@
       box-shadow: 0 8px 20px rgba(80, 35, 20, 0.3);
       border: 2px solid #663322
     }
+
+    .motoboy-input {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(232, 216, 195, 0.3);
+      border-radius: 8px;
+      padding: 0.5rem 0.8rem;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      width: 165px;
+      transition: all 0.2s;
+    }
+
+    .motoboy-input:focus {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(242, 169, 0, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+      .header-right {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+    }
   </style>
 </head>
 
@@ -799,6 +831,7 @@
       <div class="brand">Acarajé da Baiana <small>Painel do operador</small></div>
     </div>
     <div class="header-right">
+      <input type="tel" id="motoboy-wa-input" class="motoboy-input" placeholder="Tel Motoboy (55...)" onchange="saveMotoboyWA(this.value)">
       <span class="countdown-txt">↻ <span id="cd">30</span>s</span>
       <label class="sound-toggle">
         <input type="checkbox" id="soundOn" checked style="display:none">
@@ -1117,7 +1150,26 @@
       }
     };
 
-    const MOTOBOY_WA      = '5511XXXXXXXXX'; // ← número real do motoboy com DDI
+    let MOTOBOY_WA = localStorage.getItem('motoboy_wa') || '5511954803405'; // ← número real do motoboy com DDI (default fallback)
+
+    function saveMotoboyWA(val) {
+      const clean = val.replace(/\D/g, '');
+      if (clean) {
+        MOTOBOY_WA = clean;
+        localStorage.setItem('motoboy_wa', clean);
+        toast('📞 Número do motoboy salvo!');
+      } else {
+        MOTOBOY_WA = '5511954803405';
+        localStorage.removeItem('motoboy_wa');
+        toast('📞 Número padrão restaurado!');
+      }
+      document.getElementById('motoboy-wa-input').value = MOTOBOY_WA;
+    }
+
+    // Inicializar valor no input do motoboy
+    if (document.getElementById('motoboy-wa-input')) {
+      document.getElementById('motoboy-wa-input').value = MOTOBOY_WA;
+    }
 
     /* PREVENÇÃO DE DUPLICATA DE WEBHOOK (GAP 2)
        Salva no localStorage a chave webhook_{id}_{status} com TTL de 30s.

@@ -797,15 +797,14 @@
       if (showLoading) {
         document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
       }
-
       try {
         const r = await fetch(
-          `${SB_URL}/rest/v1/pedidos?status=eq.saiu_entrega&motoboy_telefone=eq.${motoboyPhone}&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at&order=created_at.desc`,
-          { headers: SBH2 }
+          `https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-motoboy-pedidos?token=motoboy@acaraje2025`
         );
         if (!r.ok) throw new Error('Erro API: ' + r.status);
 
-        pedidos = await r.json();
+        const data = await r.json();
+        pedidos = data.pedidos || [];
         render();
       } catch (e) {
         console.error('Erro ao carregar pedidos:', e);
@@ -929,14 +928,14 @@
 
       const card = document.getElementById(`c-${id}`);
       const btn = card.querySelector('.act');
-      btn.disabled = true;
-      btn.textContent = 'Enviando...';
-
       try {
-        const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
-          method: 'PATCH',
-          headers: { ...SBH, Prefer: 'return=minimal' },
-          body: JSON.stringify({ status: 'entregue' })
+        const r = await fetch('https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-motoboy-confirmar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pedido_id: id,
+            token: 'motoboy@acaraje2025'
+          })
         });
         if (!r.ok) throw new Error('Status: ' + r.status);
 
