@@ -66,16 +66,24 @@ DROP POLICY IF EXISTS anon_select_pedidos        ON pedidos;
 DROP POLICY IF EXISTS anon_insert_pedidos        ON pedidos;
 DROP POLICY IF EXISTS anon_update_pedidos_status ON pedidos;
 DROP POLICY IF EXISTS anon_select_configuracoes  ON configuracoes;
+DROP POLICY IF EXISTS anon_update_configuracoes  ON configuracoes;
+DROP POLICY IF EXISTS anon_insert_configuracoes  ON configuracoes;
 
 CREATE POLICY anon_select_produtos       ON produtos       FOR SELECT TO anon USING (true);
 CREATE POLICY anon_select_pedidos        ON pedidos        FOR SELECT TO anon USING (true);
 CREATE POLICY anon_insert_pedidos        ON pedidos        FOR INSERT TO anon WITH CHECK (true);
 CREATE POLICY anon_update_pedidos_status ON pedidos        FOR UPDATE TO anon USING (true) WITH CHECK (true);
 CREATE POLICY anon_select_configuracoes  ON configuracoes  FOR SELECT TO anon USING (true);
+CREATE POLICY anon_update_configuracoes  ON configuracoes  FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY anon_insert_configuracoes  ON configuracoes  FOR INSERT TO anon WITH CHECK (true);
 
 -- 10. Senha padrão do dashboard (mude depois)
 INSERT INTO configuracoes (chave, valor, descricao)
 VALUES ('dashboard_senha', 'baiana@2025', 'Senha de acesso ao painel do operador')
+ON CONFLICT (chave) DO NOTHING;
+
+INSERT INTO configuracoes (chave, valor, descricao)
+VALUES ('motoboy_telefone', '5511954803405', 'Número do WhatsApp do motoboy ativo')
 ON CONFLICT (chave) DO NOTHING;
 
 -- 11. Trigger: notifica WhatsApp quando pedido muda de status relevante

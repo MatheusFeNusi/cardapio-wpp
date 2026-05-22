@@ -774,24 +774,33 @@
       border: 2px solid #663322
     }
 
-    .motoboy-input {
-      background: rgba(255, 255, 255, 0.1);
-      border: 2px solid rgba(232, 216, 195, 0.3);
+    .btn-motoboy {
+      background: var(--orange);
+      color: #fff !important;
+      border: 2px solid var(--gold) !important;
+      box-shadow: 0 4px 0 #D96D1E !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
       border-radius: 8px;
-      padding: 0.5rem 0.8rem;
-      color: #fff;
+      padding: 0.5rem 1.1rem;
       font-family: 'DM Sans', sans-serif;
       font-size: 0.95rem;
-      font-weight: 600;
-      outline: none;
-      width: 165px;
-      transition: all 0.2s;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
     }
 
-    .motoboy-input:focus {
-      background: rgba(255, 255, 255, 0.18);
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(242, 169, 0, 0.2);
+    .btn-motoboy:hover {
+      background: #ff9b54 !important;
+      border-color: #ffc233 !important;
+      transform: translateY(1px);
+      box-shadow: 0 3px 0 #D96D1E !important;
+    }
+
+    .btn-motoboy:active {
+      transform: translateY(4px);
+      box-shadow: none !important;
     }
 
     @media (max-width: 768px) {
@@ -831,7 +840,9 @@
       <div class="brand">Acarajé da Baiana <small>Painel do operador</small></div>
     </div>
     <div class="header-right">
-      <input type="tel" id="motoboy-wa-input" class="motoboy-input" placeholder="Tel Motoboy (55...)" onchange="saveMotoboyWA(this.value)">
+      <button id="motoboy-btn" class="btn-sm btn-motoboy" onclick="changeMotoboyNumber()">
+        🛵 Motoboy: <span id="motoboy-num-label">Carregando...</span>
+      </button>
       <span class="countdown-txt">↻ <span id="cd">30</span>s</span>
       <label class="sound-toggle">
         <input type="checkbox" id="soundOn" checked style="display:none">
@@ -1152,24 +1163,93 @@
 
     let MOTOBOY_WA = localStorage.getItem('motoboy_wa') || '5511954803405'; // ← número real do motoboy com DDI (default fallback)
 
+    function formatDisplayPhone(num) {
+      if (!num) return 'Não configurado';
+      let clean = num.replace(/\D/g, '');
+      if (clean.startsWith('55') && clean.length >= 12) {
+        clean = clean.substring(2);
+      }
+      if (clean.length === 11) {
+        return `(${clean.substring(0, 2)}) ${clean.substring(2, 7)}-${clean.substring(7)}`;
+      } else if (clean.length === 10) {
+        return `(${clean.substring(0, 2)}) ${clean.substring(2, 6)}-${clean.substring(6)}`;
+      }
+      return num;
+    }
+
+    function updateMotoboyUI() {
+      const label = document.getElementById('motoboy-num-label');
+      if (label) {
+        label.textContent = formatDisplayPhone(MOTOBOY_WA);
+      }
+    }
+
+    async function syncMotoboyToDB(cleanNumber) {
+      try {
+        const check = await fetch(`${SB_URL}/rest/v1/configuracoes?chave=eq.motoboy_telefone&select=chave`, { headers: SBH2 });
+        const data = await check.json();
+        let r;
+        if (data && data.length > 0) {
+          r = await fetch(`${SB_URL}/rest/v1/configuracoes?chave=eq.motoboy_telefone`, {
+            method: 'PATCH',
+            headers: SBH,
+            body: JSON.stringify({ valor: cleanNumber })
+          });
+        } else {
+          r = await fetch(`${SB_URL}/rest/v1/configuracoes`, {
+            method: 'POST',
+            headers: SBH,
+            body: JSON.stringify({ chave: 'motoboy_telefone', valor: cleanNumber, descricao: 'Número do WhatsApp do motoboy ativo' })
+          });
+        }
+        if (!r.ok) console.warn('Erro ao sincronizar motoboy com DB:', r.status);
+      } catch (e) {
+        console.warn('Erro ao salvar motoboy no banco:', e.message);
+      }
+    }
+
     function saveMotoboyWA(val) {
       const clean = val.replace(/\D/g, '');
       if (clean) {
         MOTOBOY_WA = clean;
         localStorage.setItem('motoboy_wa', clean);
         toast('📞 Número do motoboy salvo!');
+        syncMotoboyToDB(clean);
       } else {
         MOTOBOY_WA = '5511954803405';
         localStorage.removeItem('motoboy_wa');
         toast('📞 Número padrão restaurado!');
+        syncMotoboyToDB('5511954803405');
       }
-      document.getElementById('motoboy-wa-input').value = MOTOBOY_WA;
+      updateMotoboyUI();
     }
 
-    // Inicializar valor no input do motoboy
-    if (document.getElementById('motoboy-wa-input')) {
-      document.getElementById('motoboy-wa-input').value = MOTOBOY_WA;
+    async function changeMotoboyNumber() {
+      const res = await showPrompt('Digite o número do WhatsApp do Motoboy (com DDI e DDD, ex: 5511999999999):', MOTOBOY_WA, 'Configurar Motoboy');
+      if (res !== null) {
+        saveMotoboyWA(res);
+      }
     }
+
+    async function loadMotoboyFromDB() {
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/configuracoes?chave=eq.motoboy_telefone&select=valor`, { headers: SBH2 });
+        if (r.ok) {
+          const data = await r.json();
+          if (data && data[0]?.valor) {
+            MOTOBOY_WA = data[0].valor.replace(/\D/g, '');
+            localStorage.setItem('motoboy_wa', MOTOBOY_WA);
+            updateMotoboyUI();
+          }
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar motoboy do banco:', e.message);
+      }
+    }
+
+    // Inicializar UI e carregar do DB em segundo plano
+    updateMotoboyUI();
+    loadMotoboyFromDB();
 
     /* PREVENÇÃO DE DUPLICATA DE WEBHOOK (GAP 2)
        Salva no localStorage a chave webhook_{id}_{status} com TTL de 30s.
