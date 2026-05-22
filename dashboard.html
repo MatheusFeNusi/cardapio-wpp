@@ -1117,7 +1117,7 @@
       }
     };
 
-    const MOTOBOY_WA      = '55119XXXXXXXX'; // ← CONFIGURAR: número do motoboy (55 + DDD + número)
+    const MOTOBOY_WA      = '5511XXXXXXXXX'; // ← número real do motoboy com DDI
 
     /* PREVENÇÃO DE DUPLICATA DE WEBHOOK (GAP 2)
        Salva no localStorage a chave webhook_{id}_{status} com TTL de 30s.
@@ -1402,13 +1402,7 @@
       const p = pedidos.find(x => x.id === id);
       if (!p) return;
 
-      // Pede número do motoboy (usa default ou deixa editar)
-      const numMotoboy = await showPrompt(
-        `Número do motoboy (com 55 + DDD):`,
-        MOTOBOY_WA,
-        `Enviar Motoboy`
-      );
-      if (!numMotoboy) return; // cancelado
+      const numMotoboy = MOTOBOY_WA; // fixo — configurado na linha 1120
 
       // Prevenção de duplicata
       if (!webhookGuard(id, 'saiu_entrega')) {
