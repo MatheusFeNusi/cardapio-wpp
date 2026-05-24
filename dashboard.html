@@ -1331,15 +1331,59 @@
       } catch (e) { }
     }
 
+    function getOpMidnight() {
+      try {
+        const spFormatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/Sao_Paulo',
+          year: 'numeric', month: 'numeric', day: 'numeric',
+          hour: 'numeric', minute: 'numeric', second: 'numeric',
+          hour12: false
+        });
+        const parts = spFormatter.formatToParts(new Date());
+        const getVal = type => parts.find(p => p.type === type).value;
+
+        const year = parseInt(getVal('year'));
+        const month = parseInt(getVal('month')) - 1;
+        const day = parseInt(getVal('day'));
+        const hour = parseInt(getVal('hour'));
+
+        let opYear = year;
+        let opMonth = month;
+        let opDay = day;
+
+        if (hour < 6) {
+          const temp = new Date(year, month, day - 1);
+          opYear = temp.getFullYear();
+          opMonth = temp.getMonth();
+          opDay = temp.getDate();
+        }
+
+        const pad = n => String(n).padStart(2, '0');
+        const isoStr = `${opYear}-${pad(opMonth + 1)}-${pad(opDay)}T06:00:00-03:00`;
+        return new Date(isoStr);
+      } catch (e) {
+        console.error('Erro ao calcular opMidnight com Intl, fallback para fuso local:', e);
+        const opMidnight = new Date();
+        if (opMidnight.getHours() < 6) {
+          opMidnight.setDate(opMidnight.getDate() - 1);
+        }
+        opMidnight.setHours(6, 0, 0, 0);
+        return opMidnight;
+      }
+    }
+
     /* CARREGAR */
     async function load(show = false) {
       if (localStorage.getItem('dash_auth') !== '1') return;
       if (show) document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
-      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      
+      const opMidnight = getOpMidnight();
+
       try {
-        console.log('Iniciando carga de pedidos...');
+        console.log('Iniciando carga de pedidos com data limite:', opMidnight.toISOString());
+        // Filtra pedidos criados hoje operacional OU que ainda estejam ativos (pendentes de conclusão)
         const r = await fetch(
-          `${SB_URL}/rest/v1/pedidos?created_at=gte.${hoje.toISOString()}&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at,asaas_payment_id,asaas_payment_link&order=created_at.desc&limit=200`,
+          `${SB_URL}/rest/v1/pedidos?or=(created_at.gte.${opMidnight.toISOString()},and(status.neq.entregue,status.neq.cancelado))&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at,asaas_payment_id,asaas_payment_link&order=created_at.desc&limit=200`,
           { headers: SBH2 }
         );
         if (!r.ok) {
@@ -1371,10 +1415,24 @@
       document.getElementById('nPr').textContent = c('em_preparo');
       document.getElementById('nPt').textContent = c('pronto');
       
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const opMidnight = getOpMidnight();
+      const today = opMidnight.getTime();
       const last7d = today - (7 * 24 * 60 * 60 * 1000);
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      
+      let startOfMonth;
+      try {
+        const spFormatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/Sao_Paulo',
+          year: 'numeric', month: 'numeric',
+          hour12: false
+        });
+        const parts = spFormatter.formatToParts(opMidnight);
+        const opYear = parts.find(p => p.type === 'year').value;
+        const opMonth = String(parts.find(p => p.type === 'month').value).padStart(2, '0');
+        startOfMonth = new Date(`${opYear}-${opMonth}-01T06:00:00-03:00`).getTime();
+      } catch (e) {
+        startOfMonth = new Date(opMidnight.getFullYear(), opMidnight.getMonth(), 1).getTime();
+      }
 
       const calc = (since) => pedidos
         .filter(p => ['pago', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue'].includes(p.status))
@@ -1471,6 +1529,12 @@
               <div class="info-row"><span class="ic">${p.tipo_entrega === 'entrega' ? '🛵' : '🏃'}</span><span>${p.tipo_entrega === 'entrega' ? endStr : 'Retirada no local'}</span></div>
               <div class="info-row"><span class="ic">💰</span><span>${pgStr}${trocoInfo}${pixLink}</span></div>
               <div class="items-box">${iHTML || '<span style="color:var(--text3)">Sem itens</span>'}</div>
+              ${p.tipo_entrega === 'entrega' ? `
+                <div style="display: flex; justify-content: space-between; font-size: 0.95rem; margin-top: 0.8rem; color: var(--text2); font-weight: 700; border-top: 1px dashed var(--border); padding-top: 0.5rem; margin-bottom: 0.5rem;">
+                  <span>🛵 Taxa de entrega</span>
+                  <span>${R(p.taxa_entrega || 0)}</span>
+                </div>
+              ` : ''}
               <div class="tot-row"><span class="tot-lbl">Total do Pedido</span><span class="tot-val">${R(p.total)}</span></div>
             </div>
             <div class="card-actions">${acts}</div>

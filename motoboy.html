@@ -934,23 +934,22 @@
       btn.disabled = true;
       btn.textContent = 'Enviando...';
       try {
-        // 1. Atualizar status diretamente no Supabase para remoção imediata da rota
-        const r = await fetch(`${SB_URL}/rest/v1/pedidos?id=eq.${id}`, {
-          method: 'PATCH',
-          headers: { ...SBH, Prefer: 'return=minimal' },
-          body: JSON.stringify({ status: 'entregue' })
-        });
-        if (!r.ok) throw new Error('Status: ' + r.status);
-
-        // 2. Notificar webhook n8n em segundo plano para processos secundários (mensagens, etc.)
-        fetch('https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-motoboy-confirmar', {
+        // ÚNICO caminho: o webhook n8n faz o PATCH no Supabase,
+        // o que dispara a trigger trg_notificar_status → envia WhatsApp ao cliente.
+        // Não há mais PATCH direto aqui para evitar disparo duplo da trigger.
+        const resp = await fetch('https://n8n.neurautomation.com/webhook/acaraje-motoboy-confirmar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pedido_id: id,
             token: 'motoboy@acaraje2025'
           })
-        }).catch(err => console.warn('Erro ao notificar webhook de confirmação:', err));
+        });
+
+        if (!resp.ok) throw new Error('Status HTTP: ' + resp.status);
+
+        const result = await resp.json();
+        if (!result.ok) throw new Error(result.error || 'Erro desconhecido no servidor');
 
         toast('🎉 Pedido marcado como entregue com sucesso!');
         load(true);
