@@ -937,7 +937,7 @@
         // ÚNICO caminho: o webhook n8n faz o PATCH no Supabase,
         // o que dispara a trigger trg_notificar_status → envia WhatsApp ao cliente.
         // Não há mais PATCH direto aqui para evitar disparo duplo da trigger.
-        const resp = await fetch('https://n8n.neurautomation.com/webhook/acaraje-motoboy-confirmar', {
+        const resp = await fetch('https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-motoboy-confirmar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
