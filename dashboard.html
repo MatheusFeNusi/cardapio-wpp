@@ -1380,10 +1380,10 @@
       const opMidnight = getOpMidnight();
 
       try {
-        console.log('Iniciando carga de pedidos com data limite:', opMidnight.toISOString());
-        // Filtra pedidos criados hoje operacional OU que ainda estejam ativos (pendentes de conclusão)
+        console.log('Iniciando carga de pedidos...');
+        // Filtra todos os pedidos ativos ou recentes do banco de dados (que não foram excluídos permanentemente)
         const r = await fetch(
-          `${SB_URL}/rest/v1/pedidos?or=(created_at.gte.${opMidnight.toISOString()},and(status.neq.entregue,status.neq.cancelado))&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at,asaas_payment_id,asaas_payment_link&order=created_at.desc&limit=200`,
+          `${SB_URL}/rest/v1/pedidos?select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at,asaas_payment_id,asaas_payment_link&order=created_at.desc&limit=200`,
           { headers: SBH2 }
         );
         if (!r.ok) {

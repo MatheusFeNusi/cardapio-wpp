@@ -65,6 +65,7 @@ DROP POLICY IF EXISTS anon_select_produtos       ON produtos;
 DROP POLICY IF EXISTS anon_select_pedidos        ON pedidos;
 DROP POLICY IF EXISTS anon_insert_pedidos        ON pedidos;
 DROP POLICY IF EXISTS anon_update_pedidos_status ON pedidos;
+DROP POLICY IF EXISTS anon_delete_pedidos        ON pedidos;
 DROP POLICY IF EXISTS anon_select_configuracoes  ON configuracoes;
 DROP POLICY IF EXISTS anon_update_configuracoes  ON configuracoes;
 DROP POLICY IF EXISTS anon_insert_configuracoes  ON configuracoes;
@@ -73,6 +74,7 @@ CREATE POLICY anon_select_produtos       ON produtos       FOR SELECT TO anon US
 CREATE POLICY anon_select_pedidos        ON pedidos        FOR SELECT TO anon USING (true);
 CREATE POLICY anon_insert_pedidos        ON pedidos        FOR INSERT TO anon WITH CHECK (true);
 CREATE POLICY anon_update_pedidos_status ON pedidos        FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY anon_delete_pedidos        ON pedidos        FOR DELETE TO anon USING (true);
 CREATE POLICY anon_select_configuracoes  ON configuracoes  FOR SELECT TO anon USING (true);
 CREATE POLICY anon_update_configuracoes  ON configuracoes  FOR UPDATE TO anon USING (true) WITH CHECK (true);
 CREATE POLICY anon_insert_configuracoes  ON configuracoes  FOR INSERT TO anon WITH CHECK (true);
