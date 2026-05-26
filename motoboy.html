@@ -802,7 +802,7 @@
       try {
         // Query Supabase directly for active orders in route assigned to this motoboy
         const r = await fetch(
-          `${SB_URL}/rest/v1/pedidos?status=eq.saiu_entrega&motoboy_telefone=eq.${motoboyPhone}&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at&order=created_at.desc`,
+          `${SB_URL}/rest/v1/pedidos?status=eq.saiu_entrega&motoboy_telefone=eq.${motoboyPhone}&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at,observacoes&order=created_at.desc`,
           { headers: SBH2 }
         );
         if (!r.ok) throw new Error('Erro API: ' + r.status);
@@ -904,6 +904,13 @@
                 <span class="ic">💳</span>
                 <span>Pagamento: <strong>${(p.forma_pagamento || '—').toUpperCase()}</strong></span>
               </div>
+
+              ${p.observacoes ? `
+                <div style="background: #FFEAEA; border: 2px dashed var(--red); border-radius: 12px; padding: 0.6rem 0.8rem; margin: 0.8rem 0; font-weight: 700; color: var(--red); font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem;">
+                  <span>📝</span>
+                  <span>Obs: ${p.observacoes}</span>
+                </div>
+              ` : ''}
 
               ${trocoHtml}
 
