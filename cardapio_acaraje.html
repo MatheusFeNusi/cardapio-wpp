@@ -906,7 +906,8 @@
       cleaned = cleaned.trim().replace(/\s+/g, ' ');
 
       // Garantir cidade e estado
-      if (!cleaned.toLowerCase().includes('são paulo') && !cleaned.toLowerCase().includes('sp')) {
+      const hasCityOrState = /\b(sp|s[aã]o\s+paulo)\b/i.test(cleaned);
+      if (!hasCityOrState) {
         cleaned += ', São Paulo, SP';
       }
 
@@ -926,17 +927,22 @@
 
         // Bounding box de ~16km em volta do restaurante para evitar resultados de outras cidades
         const viewbox = "-46.85,-23.30,-46.55,-23.60";
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=${viewbox}&bounded=1&limit=1`;
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=${viewbox}&bounded=0&limit=1`;
         const response = await fetch(url, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'AcarajeDaBaiana-Cardapio/1.0'
           }
         });
         if (!response.ok) throw new Error('Serviço de geolocalização indisponível');
 
         const data = await response.json();
         if (!data || data.length === 0) {
-          throw new Error('Endereço não localizado');
+          alert('Endereço não localizado. Verifique se o nome da rua e o número estão corretos.');
+          taxaEntrega = null;
+          distanciaKm = 0;
+          btnEntrega.textContent = `🛵 Endereço não localizado`;
+          updateCartUI();
+          return;
         }
 
         const lat = parseFloat(data[0].lat);

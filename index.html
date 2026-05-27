@@ -531,7 +531,8 @@
       let c=addr.replace(/\([^)]*\)/g,'').replace(/(?:,\s*)?(?:apto|apt|apartamento|casa|bloco|bl|sobrado|fundos|sala|andar|nº|num)\s*[a-zA-Z0-9-]+\b/gi,'').replace(/(?:,\s*)?(?:fundos|sobrado)\b/gi,'');
       if(c.includes('-')){const p=c.split('-');const f=p[0].trim();if(/\d/.test(f)||f.length>10)c=f;else c=c.replace(/-/g,' ');}
       c=c.replace(/\d{5}-\d{3}/g,'').replace(/\d{8}/g,'').trim().replace(/\s+/g,' ');
-      if(!c.toLowerCase().includes('são paulo')&&!c.toLowerCase().includes('sp'))c+=', São Paulo, SP';
+      const hasCityOrState = /\b(sp|s[aã]o\s+paulo)\b/i.test(c);
+      if(!hasCityOrState)c+=', São Paulo, SP';
       return c;
     }
 
@@ -659,11 +660,18 @@
       try {
         const query=cleanAddress(address);
         const viewbox="-46.85,-23.30,-46.55,-23.60";
-        const url=`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=${viewbox}&bounded=1&limit=1`;
-        const response=await fetch(url,{headers:{'User-Agent':'Mozilla/5.0'}});
+        const url=`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=${viewbox}&bounded=0&limit=1`;
+        const response=await fetch(url,{headers:{'User-Agent':'AcarajeDaBaiana-Cardapio/1.0'}});
         if(!response.ok)throw new Error('Indisponível');
         const data=await response.json();
-        if(!data||data.length===0)throw new Error('Não encontrado');
+        if(!data||data.length===0){
+          alert('Endereço não localizado. Verifique se o nome da rua e o número estão corretos.');
+          taxaEntrega=null;
+          distanciaKm=0;
+          btnEntrega.textContent='🛵 Endereço não localizado';
+          updateCartUI();
+          return;
+        }
         const lat=parseFloat(data[0].lat),lng=parseFloat(data[0].lon);
         const dist=haversineKm(LOJA_LAT,LOJA_LNG,lat,lng);
         const taxa=calcTaxaPorKm(dist);
@@ -672,6 +680,7 @@
         btnEntrega.textContent=`🛵 Entrega — R$${taxa.toFixed(2).replace('.',',')} (${dist.toFixed(1)} km)`;
         const prev=document.getElementById('distanciaSelector');if(prev)prev.remove();
       } catch(err) {
+        console.error('Erro ao calcular frete:', err);
         taxaEntrega=5;distanciaKm=2;btnEntrega.textContent='🛵 Entrega — R$5,00';
       } finally {
         btnEntrega.disabled=false;updateCartUI();
