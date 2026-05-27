@@ -814,18 +814,20 @@
       if(tipo==='expirado'){
         errorIcon.textContent='⏰';
         errorTitle.textContent='Seu link expirou!';
-        errorSubtitle.textContent='Links do cardápio são válidos por 24 horas por segurança.';
+        errorSubtitle.textContent='Links do cardápio são válidos por tempo limitado por segurança.';
+        errorBtn.href='https://wa.me/'+WHATSAPP_NUMBER;
       } else if(tipo==='usado'){
-        errorIcon.textContent='✅';
+        errorIcon.textContent='🛍️';
         errorTitle.textContent='Pedido já realizado!';
         errorSubtitle.textContent='Este link já foi usado para fazer um pedido.';
         document.getElementById('errorMessage').textContent='Quer fazer um novo pedido? Mande mensagem para a Bete:';
+        errorBtn.href='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent('Quero fazer outro pedido');
       } else {
         errorIcon.textContent='❌';
         errorTitle.textContent='Link inválido!';
-        errorSubtitle.textContent='Links do cardápio são válidos por uso único por segurança.';
+        errorSubtitle.textContent='Este link não é válido.';
+        errorBtn.href='https://wa.me/'+WHATSAPP_NUMBER;
       }
-      errorBtn.href='https://wa.me/'+WHATSAPP_NUMBER;
       document.getElementById('errorState').style.display='flex';
     }
 

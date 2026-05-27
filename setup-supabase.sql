@@ -139,11 +139,24 @@ CREATE TRIGGER trg_notificar_status
   AFTER UPDATE OF status ON pedidos
   FOR EACH ROW EXECUTE FUNCTION fn_notificar_status_update();
 
--- 12. Recarregar PostgREST
+-- 12. Configuração e Políticas de cardapio_tokens
+ALTER TABLE cardapio_tokens ALTER COLUMN expira_em SET DEFAULT (now() + interval '2 hours');
+ALTER TABLE cardapio_tokens ADD COLUMN IF NOT EXISTS usado boolean DEFAULT false;
+ALTER TABLE cardapio_tokens ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS anon_select_tokens ON cardapio_tokens;
+CREATE POLICY anon_select_tokens ON cardapio_tokens
+  FOR SELECT TO anon USING (true);
+
+DROP POLICY IF EXISTS anon_update_tokens_usado ON cardapio_tokens;
+CREATE POLICY anon_update_tokens_usado ON cardapio_tokens
+  FOR UPDATE TO anon USING (true) WITH CHECK (usado = true);
+
+-- 13. Recarregar PostgREST
 NOTIFY pgrst, 'reload schema';
 
 -- Verificação final
 SELECT tablename, policyname, cmd
 FROM pg_policies
-WHERE tablename IN ('pedidos','produtos','configuracoes')
+WHERE tablename IN ('pedidos','produtos','configuracoes','cardapio_tokens')
 ORDER BY tablename, policyname;
