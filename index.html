@@ -803,6 +803,16 @@
     <div class="products" id="productGrid"></div>
   </div>
 
+  <!-- Error Screen -->
+  <div id="errorState" style="display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:3rem 1.5rem; max-width:400px; margin:2rem auto; background:var(--white); border-radius:var(--radius); border:2px solid var(--border); box-shadow:0 8px 0 var(--border); gap:1.2rem;">
+    <div id="errorIcon" style="font-size:3.5rem; width:80px; height:80px; border-radius:50%; background:var(--surface); border:2px solid var(--border); display:flex; align-items:center; justify-content:center;">⏰</div>
+    <h3 id="errorTitle" style="font-family:'Playfair Display', serif; font-size:1.8rem; font-weight:900; color:var(--amber);">Seu link expirou!</h3>
+    <p id="errorSubtitle" style="font-size:0.9rem; color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:0.02em;">Links do cardápio são válidos por 24 horas por segurança.</p>
+    <p id="errorMessage" style="font-size:1rem; color:var(--dark); font-weight:600; line-height:1.5;">Para receber um novo link, mande uma mensagem para a Bete no WhatsApp:</p>
+    <a id="errorBtn" href="#" target="_blank" style="display:inline-flex; align-items:center; justify-content:center; gap:0.6rem; width:100%; padding:1.2rem; border-radius:999px; background:var(--success); color:var(--white); font-size:1.2rem; font-weight:900; text-decoration:none; box-shadow:0 6px 0 #1b5e20; transition:transform 0.1s; margin-top:0.5rem;">💬 Falar com a Bete</a>
+    <div style="margin-top:1.5rem; font-size:1rem; font-weight:800; color:var(--dark);">Acarajé da Baiana 🫓</div>
+  </div>
+
   <!-- Overlay -->
   <div class="overlay" id="overlay" onclick="closeCart()"></div>
 
@@ -819,13 +829,7 @@
 
       <div class="order-form" id="orderForm" style="display:none">
 
-        <!-- NOME E TELEFONE (mostrado se não vier pela URL) -->
-        <div class="form-group" id="dadosPessoaisField" style="display:none">
-          <label>Seu Nome</label>
-          <input class="input-field" id="nomeInput" type="text" placeholder="Como quer ser chamado?" style="margin-bottom:0.8rem">
-          <label>Seu WhatsApp</label>
-          <input class="input-field" id="telefoneInput" type="tel" placeholder="(00) 00000-0000" maxlength="15" oninput="maskTelefone(this)">
-        </div>
+
 
         <div class="form-group">
           <label>Tipo de entrega</label>
@@ -1132,9 +1136,8 @@
       }
     ];
 
-    const params = new URLSearchParams(window.location.search);
-    const telefone = params.get('tel') || params.get('telefone') || '';
-    const nomeParam = params.get('nome') || params.get('name') || '';
+    let telefone = '';
+    let nomeParam = '';
 
     let cart = {};
     let produtos = [];
@@ -1142,11 +1145,6 @@
     let formaPagamento = 'pix';
     let taxaEntrega = 0;
     let distanciaKm = 0;
-
-    if (nomeParam) {
-      document.getElementById('heroSection').style.display = 'flex';
-      document.getElementById('heroName').textContent = 'Olá, ' + nomeParam.split(' ')[0] + '!';
-    }
 
     async function loadProdutos() {
       if (!HAS_SUPABASE_CONFIG) {
@@ -1450,9 +1448,6 @@
       document.getElementById('overlay').classList.add('open');
       document.getElementById('cartDrawer').classList.add('open');
       document.body.style.overflow = 'hidden';
-      if (!telefone || !nomeParam) {
-        document.getElementById('dadosPessoaisField').style.display = 'block';
-      }
     }
 
     function closeCart() {
@@ -1500,22 +1495,9 @@
       let finalTelefone = telefone;
       let finalNome = nomeParam;
 
-      if (!telefone || !nomeParam) {
-        finalNome = finalNome || document.getElementById('nomeInput').value.trim();
-        let telDigitado = document.getElementById('telefoneInput').value.replace(/\D/g, '');
-        if (telDigitado && telDigitado.length >= 10) {
-          if (!telDigitado.startsWith('55')) telDigitado = '55' + telDigitado;
-          finalTelefone = finalTelefone || telDigitado;
-        }
-
-        if (!finalNome) {
-          alert('Por favor, informe seu nome!');
-          return;
-        }
-        if (!finalTelefone) {
-          alert('Por favor, informe um WhatsApp válido!');
-          return;
-        }
+      if (!finalNome || !finalTelefone) {
+        alert('Dados do cliente não encontrados no token!');
+        return;
       }
 
       if (tipoEntrega === 'entrega') {
@@ -1529,8 +1511,6 @@
           return;
         }
       }
-
-      const semTelefone = !finalTelefone;
 
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
@@ -1643,7 +1623,99 @@
       });
     }
 
-    loadProdutos();
+    async function validarToken(tokenStr) {
+      try {
+        const url = `${SUPABASE_URL}/rest/v1/cardapio_tokens?token=eq.${encodeURIComponent(tokenStr)}&select=token,telefone,nome,expira_em&limit=1`;
+        const response = await fetch(url, {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+          }
+        });
+
+        if (!response.ok) {
+          console.error('Erro na resposta do Supabase:', response.status);
+          mostrarPaginaErro('invalido');
+          return null;
+        }
+
+        const rows = await response.json();
+        if (!rows || rows.length === 0) {
+          mostrarPaginaErro('invalido');
+          return null;
+        }
+
+        const data = rows[0];
+        const expiraEm = new Date(data.expira_em);
+        const agora = new Date();
+
+        if (expiraEm < agora) {
+          mostrarPaginaErro('expirado');
+          return null;
+        }
+
+        return data;
+      } catch (err) {
+        console.error('Erro ao validar token:', err);
+        mostrarPaginaErro('invalido');
+        return null;
+      }
+    }
+
+    function mostrarPaginaErro(tipo) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('productsContainer').style.display = 'none';
+      document.getElementById('heroSection').style.display = 'none';
+      
+      const cartBtn = document.querySelector('.cart-btn');
+      if (cartBtn) cartBtn.style.display = 'none';
+
+      const errorState = document.getElementById('errorState');
+      const errorIcon = document.getElementById('errorIcon');
+      const errorTitle = document.getElementById('errorTitle');
+      const errorSubtitle = document.getElementById('errorSubtitle');
+      const errorBtn = document.getElementById('errorBtn');
+
+      if (tipo === 'expirado') {
+        errorIcon.textContent = '⏰';
+        errorTitle.textContent = 'Seu link expirou!';
+        errorSubtitle.textContent = 'Links do cardápio são válidos por 24 horas por segurança.';
+      } else {
+        errorIcon.textContent = '❌';
+        errorTitle.textContent = 'Link inválido!';
+        errorSubtitle.textContent = 'Links do cardápio são válidos por 24 horas por segurança.';
+      }
+
+      errorBtn.href = 'https://wa.me/' + WHATSAPP_NUMBER;
+      errorState.style.display = 'flex';
+    }
+
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+
+      if (!token) {
+        mostrarPaginaErro('invalido');
+        return;
+      }
+
+      const dados = await validarToken(token);
+      if (!dados) {
+        return;
+      }
+
+      telefone = dados.telefone || '';
+      nomeParam = dados.nome || '';
+
+      if (nomeParam) {
+        document.getElementById('heroSection').style.display = 'flex';
+        document.getElementById('heroName').textContent = 'Olá, ' + nomeParam.split(' ')[0] + '!';
+      }
+
+      await loadProdutos();
+    }
+
+    init();
   </script>
 </body>
 

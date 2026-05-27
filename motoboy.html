@@ -905,10 +905,10 @@
                 <span>Pagamento: <strong>${(p.forma_pagamento || '—').toUpperCase()}</strong></span>
               </div>
 
-              ${p.observacoes ? `
+              ${(p.observacoes || p.observacao) ? `
                 <div style="background: #FFEAEA; border: 2px dashed var(--red); border-radius: 12px; padding: 0.6rem 0.8rem; margin: 0.8rem 0; font-weight: 700; color: var(--red); font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem;">
                   <span>📝</span>
-                  <span>Obs: ${p.observacoes}</span>
+                  <span>Obs: ${p.observacoes || p.observacao}</span>
                 </div>
               ` : ''}
 

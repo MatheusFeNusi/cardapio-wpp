@@ -1533,10 +1533,10 @@
               <div class="cli-tel">📱 ${tel}</div>
               <div class="info-row"><span class="ic">${p.tipo_entrega === 'entrega' ? '🛵' : '🏃'}</span><span>${p.tipo_entrega === 'entrega' ? endStr : 'Retirada no local'}</span></div>
               <div class="info-row"><span class="ic">💰</span><span>${pgStr}${trocoInfo}${pixLink}</span></div>
-              ${p.observacoes ? `
+              ${(p.observacoes || p.observacao) ? `
                 <div style="background: #FFEAEA; border: 2px dashed var(--red); border-radius: 12px; padding: 0.6rem 0.8rem; margin-top: 0.8rem; font-weight: 700; color: var(--red); font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem;">
                   <span>📝</span>
-                  <span>Obs: ${p.observacoes}</span>
+                  <span>Obs: ${p.observacoes || p.observacao}</span>
                 </div>
               ` : ''}
               <div class="items-box">${iHTML || '<span style="color:var(--text3)">Sem itens</span>'}</div>
@@ -1688,7 +1688,9 @@
       const iRows = itens.map(i => { const qtd = i.quantidade || i.qty || 1; const sub = parseFloat(i.subtotal) || (parseFloat(i.preco || 0) * qtd); return `<div class="pr-row"><span>${qtd}x ${i.nome || ''}</span><span>${R(sub)}</span></div>`; }).join('');
       const taxaRow = taxa ? `<div class="pr-row"><span>Taxa entrega</span><span>${R(taxa)}</span></div>` : '';
       const trocoRow = (p.precisa_troco && p.valor_troco > 0) ? `<div class="pr-row"><span>Troco para</span><span>${R(p.valor_troco)}</span></div>` : '';
-      document.getElementById('pBox').innerHTML = `<h3>🫓 ACARAJÉ DA BAIANA</h3><div style="text-align:center;font-size:10px;color:#888">${data}</div><hr class="sep"><div><strong>Pedido ${id8}</strong></div><div>Cliente: ${nome}</div><div>Tel: ${tel}</div><hr class="sep"><div><strong>${p.tipo_entrega === 'entrega' ? '🛵 ENTREGA' : '🏃 RETIRADA'}</strong></div>${p.tipo_entrega === 'entrega' && endStr ? `<div style="font-size:10px">${endStr}</div>` : ''}<hr class="sep"><strong>ITENS</strong>${iRows}${taxaRow}<hr class="sep"><div class="pr-row pr-total"><span>TOTAL</span><span>${R(p.total)}</span></div>${trocoRow}<div style="font-size:10px;color:#666">Pgto: ${(p.forma_pagamento || '—').toUpperCase()} · Status: ${SL[p.status] || p.status}</div><hr class="sep"><div style="text-align:center;font-size:10px;color:#aaa">Obrigada pela preferência! 💛</div>`;
+      const obs = p.observacoes || p.observacao || '';
+      const obsRow = obs ? `<hr class="sep"><div><strong>OBS: ${obs}</strong></div>` : '';
+      document.getElementById('pBox').innerHTML = `<h3>🫓 ACARAJÉ DA BAIANA</h3><div style="text-align:center;font-size:10px;color:#888">${data}</div><hr class="sep"><div><strong>Pedido ${id8}</strong></div><div>Cliente: ${nome}</div><div>Tel: ${tel}</div><hr class="sep"><div><strong>${p.tipo_entrega === 'entrega' ? '🛵 ENTREGA' : '🏃 RETIRADA'}</strong></div>${p.tipo_entrega === 'entrega' && endStr ? `<div style="font-size:10px">${endStr}</div>` : ''}<hr class="sep"><strong>ITENS</strong>${iRows}${taxaRow}${obsRow}<hr class="sep"><div class="pr-row pr-total"><span>TOTAL</span><span>${R(p.total)}</span></div>${trocoRow}<div style="font-size:10px;color:#666">Pgto: ${(p.forma_pagamento || '—').toUpperCase()} · Status: ${SL[p.status] || p.status}</div><hr class="sep"><div style="text-align:center;font-size:10px;color:#aaa">Obrigada pela preferência! 💛</div>`;
       document.getElementById('pOverlay').classList.add('open');
     }
     function doPrint() { const c = document.getElementById('pBox').innerHTML; const w = window.open('', '_blank', 'width=380,height=620'); w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido</title><style>body{font-family:'Courier New',monospace;font-size:12px;padding:1cm;max-width:8cm;margin:0 auto}h3{font-size:13px;text-align:center}.sep{border:none;border-top:1px dashed #000;margin:.4rem 0}.pr-row{display:flex;justify-content:space-between}.pr-total{font-weight:bold;font-size:13px}</style></head><body>${c}<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),500)}<\/script></body></html>`); w.document.close(); }
