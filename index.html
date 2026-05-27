@@ -660,12 +660,11 @@
       try {
         const query=cleanAddress(address);
         const viewbox="-46.85,-23.30,-46.55,-23.60";
-        const url=`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=${viewbox}&bounded=0&limit=1`;
-        const response=await fetch(url,{headers:{'User-Agent':'AcarajeDaBaiana-Cardapio/1.0'}});
+        const url=`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=${viewbox}&bounded=0&limit=1&email=matheusfenusi@gmail.com`;
+        const response=await fetch(url);
         if(!response.ok)throw new Error('Indisponível');
         const data=await response.json();
         if(!data||data.length===0){
-          alert('Endereço não localizado. Verifique se o nome da rua e o número estão corretos.');
           taxaEntrega=null;
           distanciaKm=0;
           btnEntrega.textContent='🛵 Endereço não localizado';
@@ -675,7 +674,7 @@
         const lat=parseFloat(data[0].lat),lng=parseFloat(data[0].lon);
         const dist=haversineKm(LOJA_LAT,LOJA_LNG,lat,lng);
         const taxa=calcTaxaPorKm(dist);
-        if(taxa===null){alert(`O endereço está a ${dist.toFixed(1)} km, fora da área de entrega (máx. 8 km).`);taxaEntrega=null;distanciaKm=dist;btnEntrega.textContent=`🛵 Fora da área (${dist.toFixed(1)} km)`;updateCartUI();return;}
+        if(taxa===null){taxaEntrega=null;distanciaKm=dist;btnEntrega.textContent=`🛵 Fora da área (${dist.toFixed(1)} km)`;updateCartUI();return;}
         taxaEntrega=taxa;distanciaKm=dist;
         btnEntrega.textContent=`🛵 Entrega — R$${taxa.toFixed(2).replace('.',',')} (${dist.toFixed(1)} km)`;
         const prev=document.getElementById('distanciaSelector');if(prev)prev.remove();
@@ -727,7 +726,15 @@
       if(tipoEntrega==='entrega'){
         const address=document.getElementById('addressInput').value.trim();
         if(!address){alert('Informe o endereço de entrega!');return;}
-        if(taxaEntrega===null){alert('O endereço está fora da área de entrega (máx. 8 km). Mude para Retirada ou informe outro endereço.');return;}
+        if(taxaEntrega===null){
+          const btnText=document.getElementById('optEntrega').textContent;
+          if(btnText.includes('localizado')){
+            alert('Endereço de entrega não localizado. Verifique se o nome da rua e o número estão corretos.');
+          }else{
+            alert('O endereço está fora da nossa área de entrega (máx. 8 km). Mude para Retirada ou informe outro endereço.');
+          }
+          return;
+        }
       }
       const btn=document.getElementById('submitBtn');
       btn.disabled=true;btn.textContent='Enviando...';

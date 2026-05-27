@@ -927,17 +927,12 @@
 
         // Bounding box de ~16km em volta do restaurante para evitar resultados de outras cidades
         const viewbox = "-46.85,-23.30,-46.55,-23.60";
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=${viewbox}&bounded=0&limit=1`;
-        const response = await fetch(url, {
-          headers: {
-            'User-Agent': 'AcarajeDaBaiana-Cardapio/1.0'
-          }
-        });
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=${viewbox}&bounded=0&limit=1&email=matheusfenusi@gmail.com`;
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Serviço de geolocalização indisponível');
 
         const data = await response.json();
         if (!data || data.length === 0) {
-          alert('Endereço não localizado. Verifique se o nome da rua e o número estão corretos.');
           taxaEntrega = null;
           distanciaKm = 0;
           btnEntrega.textContent = `🛵 Endereço não localizado`;
@@ -952,7 +947,6 @@
         const taxa = calcTaxaPorKm(dist);
 
         if (taxa === null) {
-          alert(`O endereço digitado está a ${dist.toFixed(1)} km, que é fora da nossa área de entrega (máximo de 8 km). Por favor, ajuste o endereço ou fale conosco pelo WhatsApp!`);
           taxaEntrega = null;
           distanciaKm = dist;
           btnEntrega.textContent = `🛵 Fora da área de entrega (${dist.toFixed(1)} km)`;
@@ -1311,7 +1305,12 @@
           return;
         }
         if (taxaEntrega === null) {
-          alert('O endereço digitado está fora de nossa área de entrega (máximo de 8 km). Por favor, informe um endereço válido ou mude para Retirada.');
+          const btnText = document.getElementById('optEntrega').textContent;
+          if (btnText.includes('localizado')) {
+            alert('Endereço de entrega não localizado. Verifique se o nome da rua e o número estão corretos.');
+          } else {
+            alert('O endereço digitado está fora de nossa área de entrega (máximo de 8 km). Por favor, informe um endereço válido ou mude para Retirada.');
+          }
           return;
         }
       }
