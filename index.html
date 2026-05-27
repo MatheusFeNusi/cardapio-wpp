@@ -529,7 +529,12 @@
     }
     function cleanAddress(addr) {
       let c=addr.replace(/\([^)]*\)/g,'').replace(/(?:,\s*)?(?:apto|apt|apartamento|casa|bloco|bl|sobrado|fundos|sala|andar|nº|num)\s*[a-zA-Z0-9-]+\b/gi,'').replace(/(?:,\s*)?(?:fundos|sobrado)\b/gi,'');
-      if(c.includes('-')){const p=c.split('-');const f=p[0].trim();if(/\d/.test(f)||f.length>10)c=f;else c=c.replace(/-/g,' ');}
+      if(c.includes('-')){
+        const p=c.split('-');
+        const partWithNumber=p.find(part=>/\d/.test(part));
+        if(partWithNumber){c=partWithNumber.trim();}
+        else{c=c.replace(/-/g,' ');}
+      }
       c=c.replace(/\d{5}-\d{3}/g,'').replace(/\d{8}/g,'').trim().replace(/\s+/g,' ');
       const hasCityOrState = /\b(sp|s[aã]o\s+paulo)\b/i.test(c);
       if(!hasCityOrState)c+=', São Paulo, SP';

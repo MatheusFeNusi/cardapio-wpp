@@ -887,12 +887,13 @@
       cleaned = cleaned.replace(/(?:,\s*)?(?:apto|apt|apartamento|casa|bloco|bl|sobrado|fundos|sala|andar|nº|num)\s*[a-zA-Z0-9-]+\b/gi, '');
       cleaned = cleaned.replace(/(?:,\s*)?(?:fundos|sobrado)\b/gi, '');
 
-      // 3. Se houver hífen, separar e pegar a primeira parte (geralmente rua e número)
+      // 3. Se houver hífen, tentar extrair a parte principal que contém o nome da rua e o número
       if (cleaned.includes('-')) {
         const parts = cleaned.split('-');
-        const firstPart = parts[0].trim();
-        if (/\d/.test(firstPart) || firstPart.length > 10) {
-          cleaned = firstPart;
+        // Procurar a primeira parte que contém dígitos (número da casa)
+        const partWithNumber = parts.find(part => /\d/.test(part));
+        if (partWithNumber) {
+          cleaned = partWithNumber.trim();
         } else {
           cleaned = cleaned.replace(/-/g, ' ');
         }
