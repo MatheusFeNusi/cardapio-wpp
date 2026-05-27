@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel — Acarajé da Baiana</title>
+  <title>Painel — Acarajé da Raquel original da Bahia</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
     href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap"
@@ -822,7 +822,7 @@
   <div id="auth-screen">
     <div class="auth-box">
       <div class="auth-logo">🫓</div>
-      <div class="auth-title">Acarajé da Baiana</div>
+      <div class="auth-title">Acarajé da Raquel original da Bahia</div>
       <div class="auth-sub">Painel do operador</div>
       <div style="position:relative;width:100%">
         <input id="auth-pwd" class="auth-input" type="password" placeholder="Sua senha..." autocomplete="current-password"
@@ -837,7 +837,7 @@
   <div class="header">
     <div class="header-left">
       <div class="live-dot"></div>
-      <div class="brand">Acarajé da Baiana <small>Painel do operador</small></div>
+      <div class="brand">Acarajé da Raquel original da Bahia <small>Painel do operador</small></div>
     </div>
     <div class="header-right">
       <button id="motoboy-btn" class="btn-sm btn-motoboy" onclick="changeMotoboyNumber()">
@@ -1690,7 +1690,7 @@
       const trocoRow = (p.precisa_troco && p.valor_troco > 0) ? `<div class="pr-row"><span>Troco para</span><span>${R(p.valor_troco)}</span></div>` : '';
       const obs = p.observacoes || p.observacao || '';
       const obsRow = obs ? `<hr class="sep"><div><strong>OBS: ${obs}</strong></div>` : '';
-      document.getElementById('pBox').innerHTML = `<h3>🫓 ACARAJÉ DA BAIANA</h3><div style="text-align:center;font-size:10px;color:#888">${data}</div><hr class="sep"><div><strong>Pedido ${id8}</strong></div><div>Cliente: ${nome}</div><div>Tel: ${tel}</div><hr class="sep"><div><strong>${p.tipo_entrega === 'entrega' ? '🛵 ENTREGA' : '🏃 RETIRADA'}</strong></div>${p.tipo_entrega === 'entrega' && endStr ? `<div style="font-size:10px">${endStr}</div>` : ''}<hr class="sep"><strong>ITENS</strong>${iRows}${taxaRow}${obsRow}<hr class="sep"><div class="pr-row pr-total"><span>TOTAL</span><span>${R(p.total)}</span></div>${trocoRow}<div style="font-size:10px;color:#666">Pgto: ${(p.forma_pagamento || '—').toUpperCase()} · Status: ${SL[p.status] || p.status}</div><hr class="sep"><div style="text-align:center;font-size:10px;color:#aaa">Obrigada pela preferência! 💛</div>`;
+      document.getElementById('pBox').innerHTML = `<h3>🫓 ACARAJÉ DA RAQUEL</h3><div style="text-align:center;font-size:10px;color:#888">${data}</div><hr class="sep"><div><strong>Pedido ${id8}</strong></div><div>Cliente: ${nome}</div><div>Tel: ${tel}</div><hr class="sep"><div><strong>${p.tipo_entrega === 'entrega' ? '🛵 ENTREGA' : '🏃 RETIRADA'}</strong></div>${p.tipo_entrega === 'entrega' && endStr ? `<div style="font-size:10px">${endStr}</div>` : ''}<hr class="sep"><strong>ITENS</strong>${iRows}${taxaRow}${obsRow}<hr class="sep"><div class="pr-row pr-total"><span>TOTAL</span><span>${R(p.total)}</span></div>${trocoRow}<div style="font-size:10px;color:#666">Pgto: ${(p.forma_pagamento || '—').toUpperCase()} · Status: ${SL[p.status] || p.status}</div><hr class="sep"><div style="text-align:center;font-size:10px;color:#aaa">Obrigada pela preferência! 💛</div>`;
       document.getElementById('pOverlay').classList.add('open');
     }
     function doPrint() { const c = document.getElementById('pBox').innerHTML; const w = window.open('', '_blank', 'width=380,height=620'); w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido</title><style>body{font-family:'Courier New',monospace;font-size:12px;padding:1cm;max-width:8cm;margin:0 auto}h3{font-size:13px;text-align:center}.sep{border:none;border-top:1px dashed #000;margin:.4rem 0}.pr-row{display:flex;justify-content:space-between}.pr-total{font-weight:bold;font-size:13px}</style></head><body>${c}<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),500)}<\/script></body></html>`); w.document.close(); }
