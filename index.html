@@ -552,7 +552,7 @@
       {id:'agua',emoji:'💧',nome:'Água mineral',descricao:'500 ml.',preco:4,imagem_url:'',categoria:'Bebidas'}
     ];
 
-    let telefone='', nomeParam='', cart={}, produtos=[], tipoEntrega='retirada', formaPagamento='pix', taxaEntrega=0, distanciaKm=0;
+    let telefone='', nomeParam='', cart={}, produtos=[], tipoEntrega='retirada', formaPagamento='pix', taxaEntrega=0, distanciaKm=0, ultimoEnderecoCalculado='';
 
     async function loadProdutos() {
       if(!HAS_SUPABASE_CONFIG){produtos=LOCAL_PRODUTOS;renderProdutos();return;}
@@ -654,12 +654,13 @@
       if(tipo==='entrega'){
         const address=document.getElementById('addressInput').value.trim();
         if(address)await calcularFretePorEndereco(address);
-        else{taxaEntrega=5;document.getElementById('optEntrega').textContent='🛵 Entrega';document.getElementById('addressInput').focus();updateCartUI();}
-      }else{taxaEntrega=0;document.getElementById('optEntrega').textContent='🛵 Entrega';updateCartUI();}
+        else{taxaEntrega=5;ultimoEnderecoCalculado='';document.getElementById('optEntrega').textContent='🛵 Entrega';document.getElementById('addressInput').focus();updateCartUI();}
+      }else{taxaEntrega=0;ultimoEnderecoCalculado='';document.getElementById('optEntrega').textContent='🛵 Entrega';updateCartUI();}
     }
 
     async function calcularFretePorEndereco(address) {
       if(!address||address.trim().length<5||tipoEntrega!=='entrega')return;
+      ultimoEnderecoCalculado=address.trim();
       const btnEntrega=document.getElementById('optEntrega');
       btnEntrega.textContent='🛵 Calculando frete...';btnEntrega.disabled=true;
       try {
@@ -731,12 +732,17 @@
       if(tipoEntrega==='entrega'){
         const address=document.getElementById('addressInput').value.trim();
         if(!address){alert('Informe o endereço de entrega!');return;}
+        if(address.length<10){alert('Por favor, informe o endereço completo (Rua, número e bairro).');return;}
+        if(address!==ultimoEnderecoCalculado){
+          alert('Por favor, aguarde o cálculo do frete para o novo endereço.');
+          return;
+        }
         if(taxaEntrega===null){
           const btnText=document.getElementById('optEntrega').textContent;
           if(btnText.includes('localizado')){
             alert('Endereço de entrega não localizado. Verifique se o nome da rua e o número estão corretos.');
           }else{
-            alert('O endereço está fora da nossa área de entrega (máx. 8 km). Mude para Retirada ou informe outro endereço.');
+            alert('O endereço digitado está fora de nossa área de entrega (máximo de 8 km). Por favor, informe um endereço válido ou mude para Retirada.');
           }
           return;
         }

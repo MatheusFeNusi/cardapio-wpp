@@ -918,6 +918,7 @@
     async function calcularFretePorEndereco(address) {
       if (!address || address.trim().length < 5) return;
       if (tipoEntrega !== 'entrega') return;
+      ultimoEnderecoCalculado = address.trim();
 
       const btnEntrega = document.getElementById('optEntrega');
       btnEntrega.textContent = '🛵 Calculando frete...';
@@ -1037,6 +1038,7 @@
     let formaPagamento = 'pix';
     let taxaEntrega = 0;
     let distanciaKm = 0;
+    let ultimoEnderecoCalculado = '';
     const LOJA_LAT = -23.4520408;
     const LOJA_LNG = -46.6996929;
 
@@ -1208,12 +1210,14 @@
           await calcularFretePorEndereco(address);
         } else {
           taxaEntrega = 5; // default temporário
+          ultimoEnderecoCalculado = '';
           document.getElementById('optEntrega').textContent = '🛵 Entrega';
           addrInput.focus();
           updateCartUI();
         }
       } else {
         taxaEntrega = 0;
+        ultimoEnderecoCalculado = '';
         document.getElementById('optEntrega').textContent = '🛵 Entrega';
         updateCartUI();
       }
@@ -1303,6 +1307,14 @@
         const address = document.getElementById('addressInput').value.trim();
         if (!address) {
           alert('Informe o endereço de entrega!');
+          return;
+        }
+        if (address.length < 10) {
+          alert('Por favor, informe o endereço completo (Rua, número e bairro).');
+          return;
+        }
+        if (address !== ultimoEnderecoCalculado) {
+          alert('Por favor, aguarde o cálculo do frete para o novo endereço.');
           return;
         }
         if (taxaEntrega === null) {
