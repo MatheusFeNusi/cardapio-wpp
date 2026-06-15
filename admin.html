@@ -105,6 +105,33 @@
     .toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s}
     .toggle input:checked~.toggle-thumb{transform:translateX(16px)}
     .toggle-lbl{font-size:.82rem;color:var(--text2)}
+
+    @media (max-width: 768px) {
+      .header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.8rem;
+        align-items: center;
+        text-align: center;
+      }
+      .brand {
+        align-items: center;
+        font-size: 1rem;
+      }
+      .header-right {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+      }
+      .page {
+        padding: 1rem;
+      }
+      .prod-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 0.6rem;
+      }
+    }
   </style>
 </head>
 <body>

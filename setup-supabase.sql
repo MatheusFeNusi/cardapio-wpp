@@ -83,7 +83,6 @@ CREATE POLICY anon_insert_configuracoes  ON configuracoes  FOR INSERT TO anon WI
 INSERT INTO configuracoes (chave, valor, descricao)
 VALUES ('dashboard_senha', 'baiana@2025', 'Senha de acesso ao painel do operador')
 ON CONFLICT (chave) DO NOTHING;
-
 INSERT INTO configuracoes (chave, valor, descricao)
 VALUES ('motoboy_telefone', '5511954803405', 'Número do WhatsApp do motoboy ativo')
 ON CONFLICT (chave) DO NOTHING;

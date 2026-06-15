@@ -38,6 +38,12 @@
       min-height: 100vh;
     }
 
+    .header, .hero, #productsContainer, #loadingState {
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     /* Header */
     .header {
       background: var(--amber);
@@ -290,19 +296,20 @@
     .drawer {
       position: fixed;
       bottom: 0;
-      left: 0;
-      right: 0;
+      left: 50%;
+      width: 100%;
+      max-width: 600px;
       background: var(--white);
       border-radius: 20px 20px 0 0;
       z-index: 300;
       max-height: 90vh;
       overflow-y: auto;
-      transform: translateY(100%);
+      transform: translate(-50%, 100%);
       transition: transform 0.3s cubic-bezier(.32, .72, 0, 1);
     }
 
     .drawer.open {
-      transform: translateY(0);
+      transform: translate(-50%, 0);
     }
 
     .drawer-handle {
@@ -632,6 +639,24 @@
       font-size: 0.85rem;
       font-weight: 700;
     }
+
+    @media (max-width: 600px) {
+      .header {
+        padding: 0.8rem 1rem;
+        flex-direction: column;
+        gap: 0.6rem;
+        align-items: center;
+        text-align: center;
+      }
+      .header-brand {
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+      .cart-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 
@@ -769,7 +794,7 @@
     const SUPABASE_URL = 'https://ukmbexntrxgzxgkvhpfx.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbWJleG50cnhnenhna3ZocGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Njk2OTUsImV4cCI6MjA5MzE0NTY5NX0.COLOQUE_SUA_ANON_KEY_AQUI';
     const N8N_WEBHOOK = 'https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-pedido-site';
-    const WHATSAPP_NUMBER = '5511954803405';
+    const WHATSAPP_NUMBER = '5511976593591';
     const HAS_SUPABASE_CONFIG = SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('COLOQUE_SUA_ANON_KEY_AQUI');
 
     function showAlert(message, title = "Aviso") {

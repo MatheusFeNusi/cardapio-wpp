@@ -109,6 +109,29 @@
     .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);border:1px solid var(--amber);border-radius:8px;padding:.65rem 1.1rem;font-size:.82rem;color:var(--text);z-index:999;animation:fi .25s ease;max-width:280px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
     @keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 
+    @media(max-width:768px){
+      .header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.8rem;
+        align-items: center;
+        text-align: center;
+      }
+      .brand {
+        align-items: center;
+        font-size: 1rem;
+      }
+      .header-right {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+      }
+      .content {
+        padding: 1rem;
+      }
+    }
+
     @media(max-width:700px){
       .table-head,.prod-row{grid-template-columns:50px 1fr 100px 90px}
       .th:nth-child(1),.td:nth-child(1){display:none}

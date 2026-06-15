@@ -379,6 +379,31 @@
       gap: 1.5rem;
     }
 
+    @media (max-width: 768px) {
+      .header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.8rem;
+        align-items: center;
+        text-align: center;
+      }
+      .brand {
+        align-items: center;
+        font-size: 1.3rem;
+      }
+      .header-right {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+      }
+      .grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+        padding: 0 1rem 2rem;
+      }
+    }
+
     @media (max-width: 480px) {
       .grid {
         grid-template-columns: 1fr;

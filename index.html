@@ -35,6 +35,12 @@
       -webkit-font-smoothing: antialiased;
     }
 
+    .header, .hero, #productsContainer, #errorState, #loadingState {
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     .header {
       background: var(--surface);
       padding: 0.5rem 0.8rem;
@@ -129,6 +135,14 @@
     .products { display: flex; flex-direction: column; gap: 1.5rem; padding-bottom: 2.5rem; }
     .carousel-row { display: flex; flex-direction: column; gap: 0.8rem; padding: 0.8rem 1rem; }
 
+    @media (min-width: 600px) {
+      .carousel-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+      }
+    }
+
     .product-card {
       background: var(--white);
       cursor: pointer;
@@ -200,15 +214,16 @@
     .overlay.open { opacity: 1; pointer-events: all; }
 
     .drawer {
-      position: fixed; bottom: 0; left: 0; right: 0;
+      position: fixed; bottom: 0; left: 50%;
+      transform: translate(-50%, 100%);
+      width: 100%; max-width: 600px;
       background: var(--white); border-radius: 30px 30px 0 0;
       z-index: 300; max-height: 92vh; overflow-y: auto;
-      transform: translateY(100%);
       transition: transform 0.4s cubic-bezier(.32, .72, 0, 1);
       box-shadow: 0 -4px 30px rgba(80,35,20,0.3);
       border-top: 4px solid var(--amber-light);
     }
-    .drawer.open { transform: translateY(0); }
+    .drawer.open { transform: translate(-50%, 0); }
     .drawer-handle { width: 60px; height: 6px; border-radius: 999px; background: var(--border); margin: 1rem auto 0; }
     .drawer-header {
       padding: 1.2rem 1.5rem; border-bottom: 2px solid var(--border);
@@ -483,7 +498,7 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbWJleG50cnhnenhna3ZocGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Njk2OTUsImV4cCI6MjA5MzE0NTY5NX0.Tq_WsZGMNRDw4Zme9YBuw2i6fJIy6WYz3xFvbdcOmno';
     const N8N_WEBHOOK       = 'https://acarajevps-n8n.9wtaei.easypanel.host/webhook/acaraje-pedido-site';
     const PRODUTOS_BUCKET   = 'produtos';
-    const WHATSAPP_NUMBER   = '5511954803405';
+    const WHATSAPP_NUMBER   = '5511976593591';
 
     const LOJA_LAT = -23.4520408;
     const LOJA_LNG = -46.6996929;
