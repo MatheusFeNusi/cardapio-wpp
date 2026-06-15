@@ -1208,8 +1208,16 @@
       }
     }
 
+    function normalizePhone(raw) {
+      let cleaned = raw.replace(/\D/g, '');
+      if (cleaned.length === 10 || cleaned.length === 11) {
+        cleaned = '55' + cleaned;
+      }
+      return cleaned;
+    }
+
     function saveMotoboyWA(val) {
-      const clean = val.replace(/\D/g, '');
+      const clean = normalizePhone(val);
       if (clean) {
         MOTOBOY_WA = clean;
         localStorage.setItem('motoboy_wa', clean);

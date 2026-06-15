@@ -599,6 +599,8 @@
     let pedidos = [];
     let cdTimer = null;
     let cdVal = 30;
+    let known = new Set();
+    let ws = null;
 
     // Toast Notification helper
     function toast(msg) {
@@ -609,6 +611,22 @@
       el.textContent = msg;
       document.body.appendChild(el);
       setTimeout(() => el.remove(), 3000);
+    }
+
+    // Beep sound alert helper
+    function beep() {
+      try {
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        [[880, .0], [1100, .12], [880, .24]].forEach(([f, t]) => {
+          const o = ac.createOscillator(), g = ac.createGain();
+          o.connect(g); g.connect(ac.destination);
+          o.frequency.value = f; o.type = 'sine';
+          g.gain.setValueAtTime(0, ac.currentTime + t);
+          g.gain.linearRampToValueAtTime(.3, ac.currentTime + t + .02);
+          g.gain.linearRampToValueAtTime(0, ac.currentTime + t + .1);
+          o.start(ac.currentTime + t); o.stop(ac.currentTime + t + .15);
+        });
+      } catch (e) { }
     }
 
     // Modal Confirmation helper
@@ -759,6 +777,7 @@
         document.getElementById('motoboy-label').textContent = 'Motoboy: ' + formatDisplayPhone(motoboyPhone);
         
         load(true);
+        initRealtime();
       } catch (e) {
         errEl.textContent = 'Erro de conexão: ' + e.message;
         btn.disabled = false;
@@ -771,6 +790,11 @@
       motoboyPhone = '';
       pedidos = [];
       clearInterval(cdTimer);
+      if (ws) {
+        try { ws.close(); } catch (e) {}
+        ws = null;
+      }
+      known.clear();
       localStorage.removeItem('motoboy_logged_phone');
       document.getElementById('auth-phone').value = '';
       document.getElementById('auth-screen').classList.remove('hidden');
@@ -800,14 +824,29 @@
         document.getElementById('grid').innerHTML = '<div class="loading-wrap"><div class="spinner"></div>Carregando...</div>';
       }
       try {
-        // Query Supabase directly for active orders in route assigned to this motoboy
+        // Query Supabase directly for active orders in route assigned to this motoboy (flexible phone matching)
+        const phoneWithout55 = motoboyPhone.startsWith('55') ? motoboyPhone.substring(2) : motoboyPhone;
         const r = await fetch(
-          `${SB_URL}/rest/v1/pedidos?status=eq.saiu_entrega&motoboy_telefone=eq.${motoboyPhone}&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at,observacoes&order=created_at.desc`,
+          `${SB_URL}/rest/v1/pedidos?status=eq.saiu_entrega&or=(motoboy_telefone.eq.${motoboyPhone},motoboy_telefone.eq.${phoneWithout55})&select=id,telefone,nome_cliente,nome_cliente_pedido,itens,total,tipo_entrega,taxa_entrega,endereco,endereco_entrega,forma_pagamento,valor_troco,precisa_troco,status,created_at,observacoes&order=created_at.desc`,
           { headers: SBH2 }
         );
         if (!r.ok) throw new Error('Erro API: ' + r.status);
 
-        pedidos = await r.json();
+        const data = await r.json();
+
+        // Sound and toast alert for new orders
+        const isFirst = known.size === 0;
+        if (!isFirst) {
+          data.forEach(p => {
+            if (!known.has(p.id)) {
+              beep();
+              toast('🆕 Novo pedido designado para você!');
+            }
+          });
+        }
+        known = new Set(data.map(p => p.id));
+
+        pedidos = data;
         render();
       } catch (e) {
         console.error('Erro ao carregar pedidos:', e);
@@ -987,12 +1026,83 @@
       }, 1000);
     }
 
+    // Supabase Realtime Subscription via WebSockets
+    function initRealtime() {
+      if (!motoboyPhone) return;
+
+      try {
+        if (ws) {
+          try { ws.close(); } catch(e) {}
+        }
+        const wsUrl = SB_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0';
+        ws = new WebSocket(wsUrl);
+        let heartbeatTimer = null;
+        let ref = 0;
+
+        ws.onopen = () => {
+          console.log('🔌 Realtime conectado');
+          // Heartbeat every 30s to keep connection alive
+          heartbeatTimer = setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++ref) }));
+            }
+          }, 30000);
+
+          // Subscribe to pedidos changes (INSERT + UPDATE)
+          ws.send(JSON.stringify({
+            topic: 'realtime:public:pedidos',
+            event: 'phx_join',
+            payload: { config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: [
+              { event: 'INSERT', schema: 'public', table: 'pedidos' },
+              { event: 'UPDATE', schema: 'public', table: 'pedidos' }
+            ] } },
+            ref: String(++ref)
+          }));
+        };
+
+        ws.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data);
+            if (msg.event === 'postgres_changes' || msg.event === 'INSERT' || msg.event === 'UPDATE') {
+              console.log('📡 Realtime event:', msg.event);
+              load(false); // Reload silently
+            }
+          } catch (e) { /* ignore */ }
+        };
+
+        ws.onclose = (ev) => {
+          clearInterval(heartbeatTimer);
+          if (motoboyPhone) {
+            console.warn('🔌 Realtime desconectado, reconectando em 5s...', ev.reason);
+            setTimeout(initRealtime, 5000);
+          }
+        };
+
+        ws.onerror = (err) => {
+          console.warn('🔌 Realtime erro:', err);
+          ws.close();
+        };
+      } catch (e) {
+        console.warn('Realtime não disponível:', e);
+      }
+    }
+
+    // Reload immediately when screen is unlocked or tab becomes visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && motoboyPhone) {
+        load(true);
+      }
+    });
+
     // Auto-login persistence check on load
     window.onload = () => {
       const savedPhone = localStorage.getItem('motoboy_logged_phone');
       if (savedPhone) {
-        document.getElementById('auth-phone').value = savedPhone;
-        doLogin();
+        motoboyPhone = savedPhone;
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('motoboy-label').textContent = 'Motoboy: ' + formatDisplayPhone(motoboyPhone);
+        load(true);
+        initRealtime();
       }
     };
   </script>
