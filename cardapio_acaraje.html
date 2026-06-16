@@ -115,6 +115,29 @@
       justify-content: center;
     }
 
+    .store-info-banner {
+      background: var(--amber-pale);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.8rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--mid);
+      flex-wrap: wrap;
+      text-align: center;
+    }
+    .store-info-banner .info-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .store-info-banner .info-separator {
+      color: var(--border);
+    }
+
     /* Hero strip */
     .hero {
       background: var(--amber-pale);
@@ -676,6 +699,12 @@
     </button>
   </header>
 
+  <div class="store-info-banner">
+    <span class="info-item">📍 Av. dos Trabalhadores, 150 - Conceicao, Osasco - SP, 06145-120</span>
+    <span class="info-separator">•</span>
+    <span class="info-item">⏱️ Entrega de 30 a 50 min</span>
+  </div>
+
   <div class="hero" id="heroSection" style="display:none">
     <div class="hero-avatar">😊</div>
     <div class="hero-text">
@@ -727,8 +756,9 @@
         </div>
 
         <div class="form-group address-field" id="addressField">
-          <label>Endereço completo</label>
-          <textarea class="input-field" id="addressInput" rows="2" placeholder="Rua, número, bairro..."></textarea>
+          <label style="font-weight: 800; color: var(--amber);">Endereço de Entrega</label>
+          <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--dark);">Por favor, informe a Rua, o Número e o Bairro:</div>
+          <textarea class="input-field" id="addressInput" rows="2" placeholder="Ex: Rua das Flores, 123 - Centro"></textarea>
         </div>
 
         <div class="form-group">
@@ -782,6 +812,16 @@
       <h3>Pedido enviado!</h3>
       <p>Seu pedido foi registrado e você receberá a confirmação pelo WhatsApp em instantes.</p>
     </div>
+  </div>
+
+  <!-- Error Screen -->
+  <div id="errorState" style="display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:3rem 1.5rem; max-width:400px; margin:2rem auto; background:var(--white); border-radius:var(--radius); border:2px solid var(--border); box-shadow:0 8px 0 var(--border); gap:1.2rem;">
+    <div id="errorIcon" style="font-size:3.5rem; width:80px; height:80px; border-radius:50%; background:var(--surface); border:2px solid var(--border); display:flex; align-items:center; justify-content:center;">⏰</div>
+    <h3 id="errorTitle" style="font-family:'Playfair Display', serif; font-size:1.8rem; font-weight:900; color:var(--amber);">Estamos Fechados!</h3>
+    <p id="errorSubtitle" style="font-size:0.9rem; color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:0.02em;">Nosso horário de funcionamento é de Quarta a Sábado, das 16h às 22h.</p>
+    <p id="errorMessage" style="font-size:1rem; color:var(--dark); font-weight:600; line-height:1.5;">Se você tiver alguma dúvida, mande mensagem para a Bete no WhatsApp:</p>
+    <a id="errorBtn" href="#" target="_blank" style="display:inline-flex; align-items:center; justify-content:center; gap:0.6rem; width:100%; padding:1.2rem; border-radius:999px; background:var(--success); color:var(--white); font-size:1.2rem; font-weight:900; text-decoration:none; box-shadow:0 6px 0 #1b5e20; transition:transform 0.1s; margin-top:0.5rem;">💬 Falar com a Bete</a>
+    <div style="margin-top:1.5rem; font-size:1rem; font-weight:800; color:var(--dark);">Acarajé da Raquel original da Bahia 🫓</div>
   </div>
 
   <!-- Floating bar -->
@@ -1064,15 +1104,54 @@
     let taxaEntrega = 0;
     let distanciaKm = 0;
     let ultimoEnderecoCalculado = '';
-    const LOJA_LAT = -23.4520408;
-    const LOJA_LNG = -46.6996929;
+    const LOJA_LAT = -23.5771994;
+    const LOJA_LNG = -46.8047739;
 
     if (nomeParam) {
       document.getElementById('heroSection').style.display = 'flex';
       document.getElementById('heroName').textContent = 'Olá, ' + nomeParam.split(' ')[0] + '!';
     }
 
+    function isClosed(tel) {
+      const cleanedPhone = (tel || '').replace(/\D/g, '');
+      if (cleanedPhone === '5511958349994' || cleanedPhone === '11958349994') {
+        return false;
+      }
+      const agora = new Date();
+      const dia = agora.getDay();
+      const hora = agora.getHours();
+      const dentroDoHorario = (dia >= 3 && dia <= 6) && (hora >= 16 && hora < 22);
+      return !dentroDoHorario;
+    }
+
+    function mostrarPaginaErro() {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('productsContainer').style.display = 'none';
+      document.getElementById('heroSection').style.display = 'none';
+      
+      const header = document.querySelector('.header');
+      if (header) header.style.display = 'none';
+      
+      const banner = document.querySelector('.store-info-banner');
+      if (banner) banner.style.display = 'none';
+      
+      const cartBtn = document.querySelector('.cart-btn');
+      if (cartBtn) cartBtn.style.display = 'none';
+
+      const errorBtn = document.getElementById('errorBtn');
+      if (errorBtn) {
+        errorBtn.href = 'https://wa.me/' + WHATSAPP_NUMBER;
+      }
+      
+      document.getElementById('errorState').style.display = 'flex';
+    }
+
     async function loadProdutos() {
+      if (isClosed(telefone)) {
+        mostrarPaginaErro();
+        return;
+      }
+
       if (!HAS_SUPABASE_CONFIG) {
         produtos = LOCAL_PRODUTOS;
         renderProdutos();

@@ -103,6 +103,29 @@
       justify-content: center;
     }
 
+    .store-info-banner {
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      padding: 0.6rem 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.8rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--dark);
+      flex-wrap: wrap;
+      text-align: center;
+    }
+    .store-info-banner .info-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .store-info-banner .info-separator {
+      color: var(--border);
+    }
+
     .hero {
       background: var(--white);
       border-bottom: 2px solid var(--border);
@@ -372,6 +395,12 @@
     </button>
   </header>
 
+  <div class="store-info-banner">
+    <span class="info-item">📍 Av. dos Trabalhadores, 150 - Conceicao, Osasco - SP, 06145-120</span>
+    <span class="info-separator">•</span>
+    <span class="info-item">⏱️ Entrega de 30 a 50 min</span>
+  </div>
+
   <div class="hero" id="heroSection" style="display:none">
     <div class="hero-avatar">😊</div>
     <div class="hero-text">
@@ -424,8 +453,9 @@
         </div>
 
         <div class="form-group address-field" id="addressField">
-          <label>Endereço completo</label>
-          <textarea class="input-field" id="addressInput" rows="2" placeholder="Rua, número, bairro..."></textarea>
+          <label style="font-weight: 800; color: var(--amber);">Endereço de Entrega</label>
+          <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--dark);">Por favor, informe a Rua, o Número e o Bairro:</div>
+          <textarea class="input-field" id="addressInput" rows="2" placeholder="Ex: Rua das Flores, 123 - Centro"></textarea>
           <small id="addressHelper" style="font-size: 0.75rem; color: #a1a1aa; margin-top: 0.3rem; display: block;">
             💡 O frete será calculado automaticamente ao digitar seu endereço e clicar fora do campo.
           </small>
@@ -500,8 +530,8 @@
     const PRODUTOS_BUCKET   = 'produtos';
     const WHATSAPP_NUMBER   = '5511976593591';
 
-    const LOJA_LAT = -23.4520408;
-    const LOJA_LNG = -46.6996929;
+    const LOJA_LAT = -23.5771994;
+    const LOJA_LNG = -46.8047739;
     const CHAVE_PIX = 'CONFIGURAR_CHAVE_PIX_AQUI';
 
     // Token atual (será preenchido após validação)
@@ -848,12 +878,20 @@
       document.getElementById('heroSection').style.display='none';
       const cartBtn=document.querySelector('.cart-btn');
       if(cartBtn)cartBtn.style.display='none';
+      const banner=document.querySelector('.store-info-banner');
+      if(banner)banner.style.display='none';
       const errorIcon=document.getElementById('errorIcon');
       const errorTitle=document.getElementById('errorTitle');
       const errorSubtitle=document.getElementById('errorSubtitle');
       const errorBtn=document.getElementById('errorBtn');
 
-      if(tipo==='expirado'){
+      if(tipo==='fechado'){
+        errorIcon.textContent='⏰';
+        errorTitle.textContent='Estamos Fechados!';
+        errorSubtitle.textContent='Nosso horário de funcionamento é de Quarta a Sábado, das 16h às 22h.';
+        document.getElementById('errorMessage').textContent='Se você tiver alguma dúvida, mande mensagem para a Bete no WhatsApp:';
+        errorBtn.href='https://wa.me/'+WHATSAPP_NUMBER;
+      } else if(tipo==='expirado'){
         errorIcon.textContent='⏰';
         errorTitle.textContent='Seu link expirou!';
         errorSubtitle.textContent='Links do cardápio são válidos por tempo limitado por segurança.';
@@ -873,6 +911,18 @@
       document.getElementById('errorState').style.display='flex';
     }
 
+    function isClosed(tel) {
+      const cleanedPhone = (tel || '').replace(/\D/g, '');
+      if (cleanedPhone === '5511958349994' || cleanedPhone === '11958349994') {
+        return false;
+      }
+      const agora = new Date();
+      const dia = agora.getDay();
+      const hora = agora.getHours();
+      const dentroDoHorario = (dia >= 3 && dia <= 6) && (hora >= 16 && hora < 22);
+      return !dentroDoHorario;
+    }
+
     async function init() {
       const params=new URLSearchParams(window.location.search);
       const token=params.get('token');
@@ -886,6 +936,12 @@
 
       telefone=dados.telefone||'';
       nomeParam=dados.nome||'';
+
+      if (isClosed(telefone)) {
+        mostrarPaginaErro('fechado');
+        return;
+      }
+
       if(nomeParam){
         document.getElementById('heroSection').style.display='flex';
         document.getElementById('heroName').textContent='Olá, '+nomeParam.split(' ')[0]+'!';

@@ -1,5 +1,5 @@
-const LOJA_LAT = -23.4520408;
-const LOJA_LNG = -46.6996929;
+const LOJA_LAT = -23.5771994;
+const LOJA_LNG = -46.8047739;
 
 function cleanAddress(addr) {
   let c = addr;
